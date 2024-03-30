@@ -33,7 +33,7 @@ alunosRef.get().then(function(querySnapshot) {
                 // Logout bem-sucedido
                 console.log("Logout bem-sucedido");
                 // Redirecionar para a página de login ou outra página de sua escolha
-                window.location.href = "pagina-de-login.html";
+                window.location.href = "index.html";
             }).catch(function(error) {
                 // Tratar erros de logout
                 console.log("Erro ao fazer logout:", error);
