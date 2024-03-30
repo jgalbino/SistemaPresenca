@@ -4,6 +4,9 @@ var db = firebase.firestore();
 // Referência para a coleção de alunos
 var alunosRef = db.collection("alunos");
 
+// Limpa o conteúdo anterior antes de adicionar novos dados
+document.getElementById("data").innerHTML = "";
+
 // Obter todos os documentos da coleção
 alunosRef.get().then(function(querySnapshot) {
     querySnapshot.forEach(function(doc) {
