@@ -44,9 +44,37 @@
 					<br>
 				</div>
 			</div>
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+</style>
+</head>
+<body>
 
-			    <h1>Firestore Data:</h1>
-   			 <div id="data"></div>
+<h2>Dados dos Alunos</h2>
+
+<table id="alunosTable">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Matrícula</th>
+            <th>Turma</th>
+        </tr>
+    </thead>
+    <tbody id="data">
+        <!-- Os dados dos alunos serão inseridos aqui via JavaScript -->
+    </tbody>
+</table>
 			<div class="container-fluid" style="width:95%;margin: 80px auto auto auto">
 				<div class="row">
 					<div class="col-12 col-md-3" id="profile">
