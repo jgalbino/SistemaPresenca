@@ -34,7 +34,7 @@ var persist = document.getElementById('persist').checked;
 }
 
 firebase.auth().getRedirectResult().then(function(data) {
-		loginButton.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:20px"></i>'+' Verifying user...';
+
 		let checker = 0; //checks on second call to auth(), (bcoz of redirect)
 	firebase.auth().onAuthStateChanged(function(user){
 		if(user)
