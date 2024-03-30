@@ -1,17 +1,15 @@
 // Referência ao Firestore
 var db = firebase.firestore();
 
-// Referência para o documento que você deseja ler
-var docRef = db.collection("alunos").doc("3cuw0Yz0CfgSeQIZGO7t");
+// Referência para a coleção de alunos
+var alunosRef = db.collection("alunos");
 
-// Obter os dados do documento
-docRef.get().then(function(doc) {
-    if (doc.exists) {
+// Obter todos os documentos da coleção
+alunosRef.get().then(function(querySnapshot) {
+    querySnapshot.forEach(function(doc) {
         // Exibir dados na página HTML
-        document.getElementById("data").innerHTML = "<pre>" + JSON.stringify(doc.data(), null, 2) + "</pre>";
-    } else {
-        console.log("Documento não encontrado!");
-    }
+        document.getElementById("data").innerHTML += "<pre>" + JSON.stringify(doc.data(), null, 2) + "</pre>";
+    });
 }).catch(function(error) {
-    console.log("Erro ao obter documento:", error);
+    console.log("Erro ao obter documentos:", error);
 });
