@@ -66,7 +66,6 @@ firebase.auth().getRedirectResult().then(function(data) {
 		{
 			checker++;
 			if(checker == 1)
-				loginButton.innerHTML = 'Log in with <i class="fab fa-google" style="color:white">';
 			console.log('user NOT signed in!');
 		}
 	});
