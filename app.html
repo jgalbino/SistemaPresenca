@@ -61,59 +61,27 @@
 </head>
 <body>
 
-<h2>Dados dos Alunos</h2>
 
-<table id="alunosTable">
-    <thead>
-        <tr>
-            <th>Nome</th>
-            <th>Matrícula</th>
-            <th>Turma</th>
-        </tr>
-    </thead>
-    <tbody id="data">
-        <!-- Os dados dos alunos serão inseridos aqui via JavaScript -->
-    </tbody>
-</table>
-			<div class="container-fluid" style="width:95%;margin: 80px auto auto auto">
-				<div class="row">
-					<div class="col-12 col-md-3" id="profile">
-	   				   <div class="whitebox animated fadeInDown">
-		   					<div class="card">
-							  <ul class="list-group list-group-flush">
-							  	<li class="list-group-item fullTrans">
-							  		<b>Welcome to Attendance App</b>
-							  	</li>
-							  	<li class="list-group-item fullTrans" id="username">
-							  	</li>
-							    <li class="list-group-item fullTrans" id="useremail">
-							    </li>
-							  </ul>
-							</div>
-						</div>
-					</div>
 					<div class="col-12 col-md-9 whitebox animated fadeInUp">	
 						<div class="row">
 							<div class="col" id="feedback"></div>
 						</div>
 						<div class="row">
 							<div class="col">
-								<form id="dateform" style="display:none">
-								  <div class="form-row">
-								    <div class="col" style="padding-left:0">
-								      <input type="number" id="day" class="form-control" placeholder="Day">
-								    </div>
-								    <div class="col" style="padding-left:0">
-								      <input type="number" id="month" class="form-control" placeholder="Month">
-								    </div>
-								    <div class="col" style="padding-left:0">
-								      <input type="text" class="form-control" readonly id="year" placeholder="Year">
-								    </div>
-								    <div class="col" style="padding-left:0">
-								      <button style="width:100%;margin:0" type="button" onclick="viewAttendance()" class="btn btn-primary">View</button>
-								    </div>
-								  </div>
-								</form>
+								<h2>Dados dos Alunos</h2>
+								
+								<table id="alunosTable">
+								    <thead>
+								        <tr>
+								            <th>Nome</th>
+								            <th>Matrícula</th>
+								            <th>Turma</th>
+								        </tr>
+								    </thead>
+								    <tbody id="data">
+								        <!-- Os dados dos alunos serão inseridos aqui via JavaScript -->
+								    </tbody>
+								</table>
 							</div>
 						</div>
 						<div class="row table-responsive" style="margin:0" id="attendancedata" >
