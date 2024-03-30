@@ -33,19 +33,6 @@ var persist = document.getElementById('persist').checked;
 }
 }
 
-function loginWithGoogle()
-{
-	let loginButton = document.getElementById("gbtn");
-	loginButton.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:20px"></i>'+' Signing in...';
-
-	var gAuthProvider = new firebase.auth.GoogleAuthProvider;
-
-	firebase.auth().signInWithRedirect(gAuthProvider);
-}
-
-let loginButton = document.getElementById("gbtn");
-loginButton.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:20px"></i>'+' Checking if logged in...';
-
 firebase.auth().getRedirectResult().then(function(data) {
 		loginButton.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:20px"></i>'+' Verifying user...';
 		let checker = 0; //checks on second call to auth(), (bcoz of redirect)
