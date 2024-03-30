@@ -60,8 +60,6 @@ firebase.auth().getRedirectResult().then(function(data) {
 				.catch(function(error){
 					console.log(error);
 				});
-				loginButton.innerHTML = '<i class="fa fa-spinner fa-pulse" style="color:white"></i> Access denied, login only with college email id!';
-				setTimeout(()=>{loginButton.innerHTML = 'Log in with <i class="fab fa-google" style="color:white">';},5000);
 			}
 		}
 		else
