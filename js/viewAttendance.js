@@ -5,8 +5,6 @@ function findTransactions() {
 		.collection('alunos')
 		.get()
 		.then(snapshot => {
-			snapshot.docs.forEach(doc => {
-				console.log(doc.data())
-			})
+			console.log(snapshot);
 		})
 }
