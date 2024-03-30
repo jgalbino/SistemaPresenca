@@ -13,7 +13,13 @@ alunosRef.get().then(function(querySnapshot) {
         if (doc.exists) {
             // Exibir dados na página HTML
             var data = doc.data();
-            document.getElementById("data").innerHTML += "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+            var nome = data.nome;
+            var matricula = data.matricula;
+            var turma = data.turma;
+
+            // Adiciona os dados na tabela
+            var tableRow = "<tr><td>" + nome + "</td><td>" + matricula + "</td><td>" + turma + "</td></tr>";
+            document.getElementById("data").innerHTML += tableRow;
         } else {
             console.log("Documento não encontrado:", doc.id);
         }
