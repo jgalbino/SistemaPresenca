@@ -27,3 +27,15 @@ alunosRef.get().then(function(querySnapshot) {
 }).catch(function(error) {
     console.log("Erro ao obter documentos:", error);
 });
+
+        function logout() {
+            firebase.auth().signOut().then(function() {
+                // Logout bem-sucedido
+                console.log("Logout bem-sucedido");
+                // Redirecionar para a página de login ou outra página de sua escolha
+                window.location.href = "pagina-de-login.html";
+            }).catch(function(error) {
+                // Tratar erros de logout
+                console.log("Erro ao fazer logout:", error);
+            });
+        }
