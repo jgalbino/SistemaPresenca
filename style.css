@@ -68,9 +68,21 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+    /* Estilo para o contêiner da tabela */
+    .table-container {
+        width: 50%; /* 2/4 da tela */
+        margin: 0 auto; /* Centralizar na tela */
+        border-radius: 15px; /* Arredondar as bordas */
+        overflow: hidden; /* Esconder o conteúdo que ultrapassa as bordas */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    }
+
+    /* Estilo para a tabela */
     table {
         width: 100%;
         border-collapse: collapse;
+        border-radius: 15px; /* Arredondar as bordas */
+        overflow: hidden; /* Esconder o conteúdo que ultrapassa as bordas */
     }
     th, td {
         border: 1px solid #ddd;
