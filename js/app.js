@@ -1,24 +1,17 @@
-const db = firebase.firestore();
+// Referência ao Firestore
+var db = firebase.firestore();
 
-// Function to fetch data from Firestore
-function fetchData() {
-  const dataList = document.getElementById('dataList');
+// Referência para o documento que você deseja ler
+var docRef = db.collection("alunos").doc("3cuw0Yz0CfgSeQIZGO7t");
 
-  // Clear previous data
-  dataList.innerHTML = '';
-
-  // Fetch data from Firestore collection
-  db.collection("alunos").get().then((querySnapshot) => {
-    querySnapshot.forEach((doc) => {
-      // Create a list item for each document
-      const listItem = document.createElement('li');
-      listItem.textContent = doc.id + ": " + JSON.stringify(doc.data());
-      dataList.appendChild(listItem);
-    });
-  }).catch((error) => {
-    console.log("Error getting documents: ", error);
-  });
-}
-
-// Call fetchData when the page loads
-fetchData();
+// Obter os dados do documento
+docRef.get().then(function(doc) {
+    if (doc.exists) {
+        // Exibir dados na página HTML
+        document.getElementById("data").innerHTML = "<pre>" + JSON.stringify(doc.data(), null, 2) + "</pre>";
+    } else {
+        console.log("Documento não encontrado!");
+    }
+}).catch(function(error) {
+    console.log("Erro ao obter documento:", error);
+});
