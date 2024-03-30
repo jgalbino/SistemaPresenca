@@ -12,13 +12,20 @@
         .sidebar {
             background-color: #343A40; /* Cor de fundo da barra lateral */
             min-height: 100vh; /* Altura mínima igual à altura da janela */
-        }
-        .main-content {
-            padding-left: 15px; /* Espaçamento à esquerda para evitar a sobreposição da barra lateral */
+            padding-top: 50px; /* Espaçamento superior para acomodar os menus */
         }
         .menu-item {
             color: white; /* Cor do texto do menu */
             padding: 10px 15px; /* Espaçamento interno do item do menu */
+        }
+        .main-content {
+            padding-left: 15px; /* Espaçamento à esquerda para evitar a sobreposição da barra lateral */
+            padding-top: 20px; /* Espaçamento superior para acomodar os menus */
+            width: calc(100% - 250px); /* Ajusta a largura da área de conteúdo */
+            margin-left: 250px; /* Ajusta a margem esquerda para alinhar com a barra lateral */
+        }
+        .table-responsive {
+            width: 100%; /* Faz a tabela ocupar toda a largura da tela */
         }
     </style>
 </head>
@@ -43,13 +50,12 @@
             <!-- Barra lateral esquerda -->
             <div class="col-md-3 sidebar">
                 <!-- Menus -->
-                <div class="menu-item">Exemplo 1</div>
-                <div class="menu-item">Exemplo 2</div>
-                <div class="menu-item">Exemplo 3</div>
+                <div class="menu-item"><a href="#">Exemplo 1</a></div>
+                <div class="menu-item"><a href="#">Exemplo 2</a></div>
+                <div class="menu-item"><a href="#">Exemplo 3</a></div>
             </div>
             <!-- Conteúdo principal -->
             <div class="col-md-9 main-content">
-                <br><br>
                 <h2 style="text-align: center;">Dados dos Alunos</h2>
                 <table id="alunosTable" class="table table-responsive">
                     <thead>
@@ -77,3 +83,4 @@
     <script src="js/app.js" type="text/javascript"></script>
 </body>
 </html>
+
