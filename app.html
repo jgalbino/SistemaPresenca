@@ -12,20 +12,13 @@
         .sidebar {
             background-color: #343A40; /* Cor de fundo da barra lateral */
             min-height: 100vh; /* Altura mínima igual à altura da janela */
-            padding-top: 50px; /* Espaçamento superior para acomodar os menus */
+        }
+        .main-content {
+            padding-left: 15px; /* Espaçamento à esquerda para evitar a sobreposição da barra lateral */
         }
         .menu-item {
             color: white; /* Cor do texto do menu */
             padding: 10px 15px; /* Espaçamento interno do item do menu */
-        }
-        .main-content {
-            padding-left: 15px; /* Espaçamento à esquerda para evitar a sobreposição da barra lateral */
-            padding-top: 20px; /* Espaçamento superior para acomodar os menus */
-            margin-left: 250px; /* Ajusta a margem esquerda para alinhar com a barra lateral */
-        }
-        .table-responsive {
-            width: 100%; /* Faz a tabela ocupar toda a largura da tela */
-            margin-bottom: 20px; /* Espaço na parte inferior da tabela */
         }
     </style>
 </head>
@@ -50,27 +43,26 @@
             <!-- Barra lateral esquerda -->
             <div class="col-md-3 sidebar">
                 <!-- Menus -->
-                <div class="menu-item"><a href="#">Exemplo 1</a></div>
-                <div class="menu-item"><a href="#">Exemplo 2</a></div>
-                <div class="menu-item"><a href="#">Exemplo 3</a></div>
+                <div class="menu-item">Exemplo 1</div>
+                <div class="menu-item">Exemplo 2</div>
+                <div class="menu-item">Exemplo 3</div>
             </div>
             <!-- Conteúdo principal -->
             <div class="col-md-9 main-content">
+                <br><br>
                 <h2 style="text-align: center;">Dados dos Alunos</h2>
-                <div class="table-responsive">
-                    <table id="alunosTable" class="table">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Matrícula</th>
-                                <th>Turma</th>
-                            </tr>
-                        </thead>
-                        <tbody id="data">
-                            <!-- Os dados dos alunos serão inseridos aqui via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
+                <table id="alunosTable" class="table table-responsive">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Matrícula</th>
+                            <th>Turma</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data">
+                        <!-- Os dados dos alunos serão inseridos aqui via JavaScript -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -85,3 +77,4 @@
     <script src="js/app.js" type="text/javascript"></script>
 </body>
 </html>
+
