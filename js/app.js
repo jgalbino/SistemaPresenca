@@ -1,7 +1,3 @@
-// app.js
-import './config.js';
-// Import Firebase configuration
-
 const db = firebase.firestore();
 
 // Function to fetch data from Firestore
