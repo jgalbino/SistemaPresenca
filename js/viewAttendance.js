@@ -2,7 +2,7 @@ findTransactions();
 
 function findTransactions() {
 	firebase.firestore()
-		.collection('aluno')
+		.collection('alunos')
 		.get()
 		.then(snapshot => {
 			snapshot.docs.forEach(doc => {
