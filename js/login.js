@@ -50,7 +50,7 @@ firebase.auth().getRedirectResult().then(function(data) {
 			if(user.email.endsWith("@escolaoctogono.com"))
 			{
 				console.log('allowed!');
-				window.location = 'viewAttendance.html';
+				window.location = 'app.html';
 			}
 			else
 			{
