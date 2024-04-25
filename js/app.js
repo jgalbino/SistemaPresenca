@@ -1,81 +1,84 @@
-// Inicialize o Firebase com a configuração correta
-firebase.initializeApp(firebaseConfig); 
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore(); // Referência ao Firestore
 
 // Função para carregar turmas únicas para o filtro de turma
 function loadUniqueTurmas() {
-    db.collection('alunos') // Referência à coleção de alunos
+    db.collection('alunos')
         .get() // Obter todos os documentos
         .then((querySnapshot) => {
-            const turmas = new Set(); // Usar Set para valores únicos
+            const turmas = new Set(); // Para armazenar turmas únicas
             querySnapshot.forEach((doc) => {
-                const turma = doc.data().turma; // Campo 'turma'
+                const turma = doc.data().turma; // Campo 'turma' no documento
                 if (turma) {
-                    turmas.add(turma); // Adicionar ao conjunto
+                    turmas.add(turma); // Adicionar ao conjunto de turmas
                 }
             });
 
-            // Adicionar turmas ao select
-            const selectElement = document.getElementById('filterTurma'); 
-            selectElement.innerHTML = ''; // Limpar antes de adicionar
+            const selectElement = document.getElementById('filterTurma'); // Referência ao select
+            selectElement.innerHTML = ''; // Limpar opções existentes
+
+            // Adicionar opção para todas as turmas
+            const allOption = document.createElement('option');
+            allOption.value = ''; // Valor para indicar todas as turmas
+            allOption.text = 'Todas as turmas';
+            selectElement.appendChild(allOption);
+
+            // Adicionar turmas únicas ao select
             turmas.forEach((turma) => {
                 const option = document.createElement('option');
-                option.value = turma;
-                option.text = turma;
+                option.value = turma; // Valor do option
+                option.text = turma; // Texto do option
                 selectElement.appendChild(option); // Adicionar ao select
             });
-
-            // Adicionar opção para limpar o filtro
-            const clearOption = document.createElement('option');
-            clearOption.value = ''; // Valor vazio para "todas as turmas"
-            clearOption.textContent = 'Todas as turmas'; // Texto exibido
-            selectElement.appendChild(clearOption);
         })
         .catch((error) => {
-            console.error("Erro ao carregar turmas:", error); // Captura erros
+            console.error("Erro ao carregar turmas:", error); // Log para erros
         });
 }
 
-// Função para carregar alunos na tabela, com filtros aplicados
+// Função para carregar dados dos alunos na tabela com filtros aplicados
 function loadAlunos() {
     const filterDate = document.getElementById('filterDate').value; // Filtro de data
     const filterTurma = document.getElementById('filterTurma').value; // Filtro de turma
 
-    let query = db.collection('alunos'); // Inicializa query básica
+    let query = db.collection('alunos'); // Inicia consulta ao Firestore
 
     if (filterDate) {
-        query = query.where('dataPresenca', '==', filterDate); // Filtrar por data
+        // Supondo que há um campo de data de presença, como 'dataPresenca'
+        query = query.where('dataPresenca', '==', filterDate);
     }
 
     if (filterTurma) {
         query = query.where('turma', '==', filterTurma); // Filtrar por turma
     }
 
-    query.get() // Executar query
+    query
+        .get() // Executar a consulta ao Firestore
         .then((querySnapshot) => {
-            const dataElement = document.getElementById('data'); 
-            dataElement.innerHTML = ''; // Limpar tabela antes de adicionar
+            const dataElement = document.getElementById('data'); // Referência à tabela
+            dataElement.innerHTML = ''; // Limpar a tabela antes de adicionar
 
+            // Adicionar alunos à tabela
             querySnapshot.forEach((doc) => {
-                const aluno = doc.data(); 
-                const row = document.createElement('tr'); // Criação de linha
+                const aluno = doc.data(); // Dados do aluno
+                const row = document.createElement('tr'); // Criar linha
 
-                // Colunas para os dados do aluno
+                // Colunas para nome, matrícula, turma, e data de presença
                 const nomeCell = document.createElement('td');
-                nomeCell.textContent = aluno.nome;
+                nomeCell.textContent = aluno.nome; // Nome do aluno
                 row.appendChild(nomeCell);
 
                 const matriculaCell = document.createElement('td');
-                matriculaCell.textContent = aluno.matricula;
+                matriculaCell.textContent = aluno.matricula; // Matrícula do aluno
                 row.appendChild(matriculaCell);
 
                 const turmaCell = document.createElement('td');
-                turmaCell.textContent = aluno.turma;
+                turmaCell.textContent = aluno.turma; // Turma do aluno
                 row.appendChild(turmaCell);
 
-                // Data de presença com valor padrão "N/A" caso não exista
                 const dataPresencaCell = document.createElement('td');
-                dataPresencaCell.textContent = aluno.dataPresenca ? aluno.dataPresenca : 'N/A';
+                dataPresencaCell.textContent = aluno.dataPresenca ? aluno.dataPresenca : 'N/A'; // Data de presença
                 row.appendChild(dataPresencaCell);
 
                 // Adiciona a linha à tabela
@@ -83,25 +86,15 @@ function loadAlunos() {
             });
         })
         .catch((error) => {
-            console.error("Erro ao carregar dados dos alunos:", error); // Captura erros
+            console.error("Erro ao carregar dados dos alunos:", error); // Log para erros
         });
 }
 
-// Função para logout
-function logout() {
-    firebase.auth().signOut().then(() => {
-        console.log("Logout bem-sucedido");
-        window.location.href = "index.html"; // Redirecionar após logout
-    }).catch((error) => {
-        console.error("Erro ao fazer logout:", error); // Captura erro de logout
-    });
-}
-
 // Eventos para aplicar filtros
-document.getElementById('filterDate').addEventListener('change', loadAlunos); // Filtro de data
-document.getElementById('filterTurma').addEventListener('change', loadAlunos); // Filtro de turma
+document.getElementById('filterDate').addEventListener('change', loadAlunos); // Alteração no filtro de data
+document.getElementById('filterTurma').addEventListener('change', loadAlunos); // Alteração no filtro de turma
 
-// Inicializar ao carregar a página
+// Carregar turmas e alunos ao iniciar
 loadUniqueTurmas(); // Carregar turmas únicas para o filtro
-loadAlunos(); // Carregar alunos na tabela
+loadAlunos(); // Carregar alunos para a tabela
 
