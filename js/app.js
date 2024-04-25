@@ -42,25 +42,25 @@ alunosRef.get().then(function(querySnapshot) {
 
 // Função para carregar turmas únicas para o filtro de turma
 function loadUniqueTurmas() {
-    db.collection('alunos')  // Coleção de dados dos alunos no Firestore
+    db.collection('alunos')
         .get()
         .then((querySnapshot) => {
-            const turmas = new Set();  // Usar Set para obter valores únicos
+            const turmas = new Set(); // Armazenar valores únicos
             querySnapshot.forEach((doc) => {
-                const turma = doc.data().turma;  // Campo 'turma' do aluno
+                const turma = doc.data().turma; // Campo 'turma' do aluno
                 if (turma) {
-                    turmas.add(turma);
+                    turmas.add(turma); // Adicionar à lista de turmas únicas
                 }
             });
 
             const selectElement = document.getElementById('filterTurma');
-            selectElement.innerHTML = '';  // Limpar o select antes de preencher
+            selectElement.innerHTML = ''; // Limpar opções existentes
 
             turmas.forEach((turma) => {
                 const option = document.createElement('option');
                 option.value = turma;
                 option.text = turma;
-                selectElement.appendChild(option);
+                selectElement.appendChild(option); // Adicionar ao dropdown
             });
         })
         .catch((error) => {
@@ -76,7 +76,7 @@ function loadAlunos() {
     let query = db.collection('alunos');
 
     if (filterDate) {
-        // Supondo que haja um campo de data de presença, como 'dataPresenca'
+        // Supomos que há um campo de data de presença, como 'dataPresenca'
         query = query.where('dataPresenca', '==', filterDate);
     }
 
@@ -88,7 +88,7 @@ function loadAlunos() {
         .get()
         .then((querySnapshot) => {
             const dataElement = document.getElementById('data');
-            dataElement.innerHTML = '';  // Limpar a tabela antes de preencher
+            dataElement.innerHTML = ''; // Limpar tabela antes de adicionar novos dados
 
             querySnapshot.forEach((doc) => {
                 const aluno = doc.data();
@@ -106,7 +106,7 @@ function loadAlunos() {
                 turmaCell.textContent = aluno.turma;
                 row.appendChild(turmaCell);
 
-                dataElement.appendChild(row);
+                dataElement.appendChild(row); // Adicionar linha à tabela
             });
         })
         .catch((error) => {
@@ -119,5 +119,5 @@ document.getElementById('filterDate').addEventListener('change', loadAlunos);
 document.getElementById('filterTurma').addEventListener('change', loadAlunos);
 
 // Inicializar filtros e carregar dados
-loadUniqueTurmas();  // Carregar turmas únicas
-loadAlunos();  // Carregar alunos ao iniciar
+loadUniqueTurmas(); // Carregar turmas únicas
+loadAlunos(); // Carregar dados ao iniciar
