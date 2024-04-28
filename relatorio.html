@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Faltas</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.2/firebase-auth-compat.js"></script>
+    <script type="module" src="./js/relatorio.js"></script> <!-- Script para geração do relatório -->
+    <style>
+        .bg-dark-gray {
+            background-color: #343a40; /* Cinza escuro */
+            color: white;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%; /* Para garantir altura total */
+        }
+
+        .full-height {
+            min-height: 100vh; /* Para garantir que o menu se estenda até o final */
+        }
+    </style>
+      <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%; /* Para garantir altura total */
+        }
+
+        .full-height {
+            min-height: 100vh; /* Para manter a barra lateral até o final da página */
+        }
+
+        .bg-dark-gray {
+            background-color: #343a40; /* Cinza escuro */
+            color: white; /* Para garantir contraste de texto */
+        }
+
+        .accessible-font {
+            font-size: 16px; /* Tamanho padrão da fonte */
+        }
+
+        .btn-adjust-font {
+            margin: 0 5px; /* Pequeno espaço entre botões */
+        }
+    </style>
+
+    <!-- Script para ajustar a fonte e lembrar a preferência do usuário -->
+    <script>
+        const ajustarFonte = (delta) => {
+            const body = document.body;
+            const fontSize = parseFloat(getComputedStyle(body).fontSize);
+            const novoTamanho = fontSize + delta;
+            body.style.fontSize = `${novoTamanho}px`;
+            localStorage.setItem("tamanhoFonte", novoTamanho); // Salvar preferência do usuário
+        };
+
+        const aplicarFonteSalva = () => {
+            const tamanhoSalvo = localStorage.getItem("tamanhoFonte");
+            if (tamanhoSalvo) {
+                document.body.style.fontSize = `${tamanhoSalvo}px`;
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", aplicarFonteSalva);
+    </script>
+</head>
+<body>
+
+<!-- Cabeçalho do site com fundo cinza escuro -->
+<nav class="navbar navbar-expand-lg bg-dark-gray">
+    <a class="navbar-brand text-white" href="#">Sistema de Presença | Escola Octógono</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+            <!-- Botões para ajustar fonte -->
+            <li class="nav-item">
+                <button class="btn btn-light btn-adjust-font" onclick="ajustarFonte(2)">Aumentar Fonte</button>
+            </li>
+            <li class="nav-item">
+                <button class="btn btn-light btn-adjust-font" onclick="ajustarFonte(-2)">Diminuir Fonte</button>
+            </li>
+            <!-- Botão de Logout em Vermelho -->
+            <li class="nav-item">
+                <a class="nav-link text-danger" href="#">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Layout com barra lateral e conteúdo principal -->
+<div class="container-fluid full-height d-flex flex-row p-0">
+    <!-- Barra lateral para menu -->
+    <div class="col-md-3 bg-dark-gray d-flex flex-column p-0">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link text-white" href="#relatorio-faltas">Relatório de Faltas</a>
+            </li>
+            <!-- Outros links para o menu -->
+        </ul>
+    </div>
+
+    <!-- Conteúdo principal para o relatório de faltas -->
+    <div class="col-md-9">
+        <!-- Seção para o relatório de faltas -->
+        <section id="relatorio-faltas">
+            <h2>Relatório de Faltas</h2>
+            <form id="falta-relatorio-form">
+                <div class="form-group">
+                    <label para="select-agrupamento">Agrupar por:</label>
+                    <select id="select-agrupamento" class="form-control" required>
+                        <option value="" disabled selected>Selecione um critério</option>
+                        <option value="data">Data</option>
+                        <option value="ano">Ano do Ensino</option>
+                        <option value="turma">Turma</option>
+                        <option value="professor">Professor</option>
+                        <option value="disciplina">Disciplina</option>
+                        <option value="aluno">Aluno</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-secondary" id="gerar-relatorio">Gerar Relatório</button>
+                <button type="button" class="btn btn-primary" id="baixar-txt">Baixar Relatório em TXT</button>
+            </form>
+
+            <!-- Tabela para exibição do relatório -->
+            <div class="mt-3" id="relatorio-tabela">
+                <!-- Relatório será carregado aqui -->
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Bibliotecas JS para Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+</body>
+</html>
