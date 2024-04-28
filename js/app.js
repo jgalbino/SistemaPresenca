@@ -174,3 +174,15 @@ const registerPresence = (event) => {
 
 // Vincular evento para registrar ou salvar presença
 document.getElementById("register-view-presence-form").addEventListener("submit", registerPresence);
+
+        function logout() {
+            firebase.auth().signOut().then(function() {
+                // Logout bem-sucedido
+                console.log("Logout bem-sucedido");
+                // Redirecionar para a página de login ou outra página de sua escolha
+                window.location.href = "index.html";
+            }).catch(function(error) {
+                // Tratar erros de logout
+                console.log("Erro ao fazer logout:", error);
+            });
+        }
