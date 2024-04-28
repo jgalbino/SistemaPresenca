@@ -1,12 +1,11 @@
 // Configuração do Firebase
 var config = {
-    apiKey: "AIzaSyDayv8_M_jNUwigisneCBxu_O1eRjTO7B8",
-    authDomain: "presencateste-77a47.firebaseapp.com",
-    projectId: "presencateste-77a47",
-    storageBucket: "presencateste-77a47.appspot.com",
-    messagingSenderId: "568981214936",
-    appId: "1:568981214936:web:7285386a485d09e05769ad",
-    measurementId: "G-862812QEH6"
+	apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
+	authDomain: "sistemaoctogono.firebaseapp.com",
+	projectId: "sistemaoctogono",
+	storageBucket: "sistemaoctogono.appspot.com",
+	messagingSenderId: "415747300285",
+	appId: "1:415747300285:web:2ae6ae2d51eefc7e1950d4"
 };
 
 // Inicializar Firebase
