@@ -30,10 +30,33 @@ const gerarRelatorio = async () => {
 
         const agrupado = {};
 
+        // Buscar os nomes dos alunos a partir dos IDs
+        const nomePorId = {};
+
+        // Função para obter nomes dos IDs
+        const obterNomesDosIDs = async (ids) => {
+            const promessas = ids.map((id) => db.collection("Alunos").doc(id).get());
+            const resultados = await Promise.all(promessas);
+
+            resultados.forEach((doc) => {
+                if (doc.exists) {
+                    nomePorId[doc.id] = doc.data().nome; // Mapeia ID para nome
+                }
+            });
+        };
+
+        // Obter os IDs únicos dos presentes para buscar os nomes
+        const idsUnicos = new Set();
+        dados.forEach((item) => {
+            item.presentes.forEach((id) => idsUnicos.add(id));
+        });
+
+        await obterNomesDosIDs([...idsUnicos]); // Obter nomes dos IDs
+
+        // Agrupar conforme o critério selecionado
         dados.forEach((item) => {
             let chave;
 
-            // Definir chave de agrupamento conforme o critério selecionado
             if (agrupamento === "data") {
                 chave = item.date; // Campo de data do Firestore
             } else {
@@ -70,12 +93,16 @@ const gerarRelatorio = async () => {
             const tr = document.createElement("tr");
 
             const agrupamentoCell = document.createElement("td");
-            agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento (por exemplo, data)
+            agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
 
             const detalhesCell = document.createElement("td");
-            // Exibe os alunos presentes separados por ponto e vírgula
-            const detalhes = agrupado[chave].map((item) => item.presentes.join("; "));
-            detalhesCell.textContent = detalhes.join(" | "); // Se houver mais de um item, use pipe para separar
+
+            // Exibir os nomes dos alunos presentes, separados por ponto e vírgula
+            const nomesPresentes = agrupado[chave].map((item) => 
+                item.presentes.map((id) => nomePorId[id]).join("; ")
+            ).join(" | "); // Se houver mais de um item, usar pipe para separar
+
+            detalhesCell.textContent = nomesPresentes;
 
             tr.appendChild(agrupamentoCell);
             tr.appendChild(detalhesCell);
@@ -91,6 +118,7 @@ const gerarRelatorio = async () => {
         console.error("Erro ao gerar relatório:", error);
     }
 };
+
 
 // Vincular evento para gerar o relatório
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
