@@ -28,27 +28,38 @@ const gerarRelatorio = async () => {
         const querySnapshot = await db.collection("Presenças").get();
         const dados = querySnapshot.docs.map((doc) => doc.data());
 
-        // Agrupar conforme o critério selecionado
         const agrupado = {};
 
         dados.forEach((item) => {
-            const chave = item[agrupamento]; // Pode ser data, ano, turma, professor, etc.
+            let chave;
+
+            // Definir chave de agrupamento conforme o critério selecionado
+            if (agrupamento === "data") {
+                chave = item.date; // Campo de data do Firestore
+            } else {
+                chave = item[agrupamento]; // Outros critérios como "ano", "turma", etc.
+            }
+
+            if (typeof chave === "undefined") {
+                console.error("Chave para agrupamento está indefinida:", item);
+                return; // Se chave estiver indefinida, retorne para evitar erro
+            }
 
             if (!agrupado[chave]) {
                 agrupado[chave] = [];
             }
 
-            agrupado[chave].push(item);
+            agrupado[chave].push(item); // Adicionar ao agrupamento
         });
 
-        // Criar a tabela para exibição do relatório
+        // Criar tabela para exibição do relatório
         const table = document.createElement("table");
         table.className = "table table-striped";
 
         const thead = document.createElement("thead");
         const trHead = document.createElement("tr");
-        trHead.appendChild(document.createElement("th")).textContent = "Agrupamento";
-        trHead.appendChild(document.createElement("th")).textContent = "Detalhes";
+        trHead.appendChild(document.createElement("th")).textContent = "Agrupamento"; // Nome do agrupamento
+        trHead.appendChild(document.createElement("th")).textContent = "Detalhes"; // Detalhes do agrupamento
 
         thead.appendChild(trHead);
         table.appendChild(thead);
@@ -59,10 +70,12 @@ const gerarRelatorio = async () => {
             const tr = document.createElement("tr");
 
             const agrupamentoCell = document.createElement("td");
-            agrupamentoCell.textContent = chave; // Exibe o valor do agrupamento
+            agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento (por exemplo, data)
 
             const detalhesCell = document.createElement("td");
-            detalhesCell.textContent = agrupado[chave].map((item) => item.presentes.join(", ")).join(" | ");
+            // Exibe os alunos presentes separados por ponto e vírgula
+            const detalhes = agrupado[chave].map((item) => item.presentes.join("; "));
+            detalhesCell.textContent = detalhes.join(" | "); // Se houver mais de um item, use pipe para separar
 
             tr.appendChild(agrupamentoCell);
             tr.appendChild(detalhesCell);
@@ -73,11 +86,15 @@ const gerarRelatorio = async () => {
         table.appendChild(tbody);
         relatorioTabela.appendChild(table);
 
-        return agrupado; // Retorna para usar na função de baixar como TXT
+        return agrupado; // Retorna para uso na função de download de texto
     } catch (error) {
         console.error("Erro ao gerar relatório:", error);
     }
 };
+
+// Vincular evento para gerar o relatório
+document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
+
 
 // Função para baixar relatório como arquivo de texto
 const baixarRelatorioTXT = async () => {
