@@ -12,7 +12,35 @@ let config = {
 const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
-// Função para gerar o relatório de faltas
+// Função para obter nomes dos IDs
+const obterNomesDosIDs = async (ids) => {
+    const nomePorId = {}; // Para armazenar nomes mapeados por IDs
+
+    // Validar se os IDs não estão vazios ou nulos
+    const idsValidos = ids.filter((id) => id && id.trim() !== ""); // Remover IDs inválidos
+
+    if (idsValidos.length === 0) {
+        console.error("Nenhum ID válido para buscar.");
+        return nomePorId;
+    }
+
+    // Buscar documentos no Firestore para IDs válidos
+    const promessas = idsValidos.map((id) => db.collection("Alunos").doc(id).get());
+
+    const resultados = await Promise.all(promessas);
+
+    resultados.forEach((doc) => {
+        if (doc.exists) {
+            nomePorId[doc.id] = doc.data().nome; // Mapeia ID para nome
+        } else {
+            console.warn("Documento não encontrado para ID:", doc.id);
+        }
+    });
+
+    return nomePorId;
+};
+
+// Modificar gerarRelatorio para verificar IDs antes de usar
 const gerarRelatorio = async () => {
     const agrupamento = document.getElementById("select-agrupamento").value;
     const relatorioTabela = document.getElementById("relatorio-tabela");
@@ -30,28 +58,13 @@ const gerarRelatorio = async () => {
 
         const agrupado = {};
 
-        // Buscar os nomes dos alunos a partir dos IDs
-        const nomePorId = {};
-
-        // Função para obter nomes dos IDs
-        const obterNomesDosIDs = async (ids) => {
-            const promessas = ids.map((id) => db.collection("Alunos").doc(id).get());
-            const resultados = await Promise.all(promessas);
-
-            resultados.forEach((doc) => {
-                if (doc.exists) {
-                    nomePorId[doc.id] = doc.data().nome; // Mapeia ID para nome
-                }
-            });
-        };
-
-        // Obter os IDs únicos dos presentes para buscar os nomes
+        // Obter IDs únicos dos presentes para buscar os nomes
         const idsUnicos = new Set();
         dados.forEach((item) => {
             item.presentes.forEach((id) => idsUnicos.add(id));
         });
 
-        await obterNomesDosIDs([...idsUnicos]); // Obter nomes dos IDs
+        const nomePorId = await obterNomesDosIDs([...idsUnicos]); // Buscar nomes dos IDs válidos
 
         // Agrupar conforme o critério selecionado
         dados.forEach((item) => {
@@ -85,7 +98,7 @@ const gerarRelatorio = async () => {
         trHead.appendChild(document.createElement("th")).textContent = "Detalhes"; // Detalhes do agrupamento
 
         thead.appendChild(trHead);
-        table.appendChild(thead);
+        table.appendChild(tbody);
 
         const tbody = document.createElement("tbody");
 
@@ -97,10 +110,10 @@ const gerarRelatorio = async () => {
 
             const detalhesCell = document.createElement("td");
 
-            // Exibir os nomes dos alunos presentes, separados por ponto e vírgula
+            // Exibir nomes separados por ponto e vírgula
             const nomesPresentes = agrupado[chave].map((item) => 
-                item.presentes.map((id) => nomePorId[id]).join("; ")
-            ).join(" | "); // Se houver mais de um item, usar pipe para separar
+                item.presentes.map((id) => nomePorId[id] || "ID desconhecido").join("; ")
+            ).join(" | "); 
 
             detalhesCell.textContent = nomesPresentes;
 
@@ -118,7 +131,6 @@ const gerarRelatorio = async () => {
         console.error("Erro ao gerar relatório:", error);
     }
 };
-
 
 // Vincular evento para gerar o relatório
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
