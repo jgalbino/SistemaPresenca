@@ -12,34 +12,6 @@ let config = {
 const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
-// Função para obter nomes dos IDs
-const obterNomesDosIDs = async (ids) => {
-    const nomePorId = {}; // Para armazenar nomes mapeados por IDs
-
-    // Verificar se os IDs são válidos
-    const idsValidos = ids.filter((id) => id && id.trim() !== ""); // Excluir IDs vazios ou nulos
-
-    if (idsValidos.length === 0) {
-        console.error("Nenhum ID válido para buscar.");
-        return nomePorId; // Se não houver IDs válidos, retorne um objeto vazio
-    }
-
-    // Buscar documentos para IDs válidos
-    const promessas = idsValidos.map((id) => db.collection("Alunos").doc(id).get());
-    const resultados = await Promise.all(promessas);
-
-    resultados.forEach((doc) => {
-        if (doc.exists) {
-            nomePorId[doc.id] = doc.data().nome; // Mapeia ID para nome
-        } else {
-            console.warn("Documento não encontrado para ID:", doc.id); // Aviso se documento não existir
-        }
-    });
-
-    return nomePorId; // Retorna nomes mapeados por IDs
-};
-
-// Função para gerar o relatório de faltas
 const gerarRelatorio = async () => {
     const agrupamento = document.getElementById("select-agrupamento").value;
     const relatorioTabela = document.getElementById("relatorio-tabela");
@@ -57,24 +29,10 @@ const gerarRelatorio = async () => {
 
         const agrupado = {};
 
-        // Obter IDs únicos dos presentes para buscar nomes
-        const idsUnicos = new Set();
-        dados.forEach((item) => {
-            item.presentes.forEach((id) => {
-                if (id && id.trim() !== "") {
-                    idsUnicos.add(id); // Apenas IDs válidos
-                } else {
-                    console.warn("ID vazio ou nulo encontrado:", id); // Aviso para IDs inválidos
-                }
-            });
-        });
-
-        const nomePorId = await obterNomesDosIDs([...idsUnicos]); // Buscar nomes para IDs válidos
-
-        // Agrupar conforme o critério selecionado
         dados.forEach((item) => {
             let chave;
 
+            // Definir chave de agrupamento conforme o critério selecionado
             if (agrupamento === "data") {
                 chave = item.date; // Campo de data do Firestore
             } else {
@@ -82,8 +40,8 @@ const gerarRelatorio = async () => {
             }
 
             if (typeof chave === "undefined") {
-                console.error("Chave para agrupamento indefinida:", item); // Aviso para chave inválida
-                return; // Retornar se a chave estiver indefinida
+                console.error("Chave para agrupamento está indefinida:", item);
+                return; // Se chave estiver indefinida, retorne para evitar erro
             }
 
             if (!agrupado[chave]) {
@@ -103,7 +61,7 @@ const gerarRelatorio = async () => {
         trHead.appendChild(document.createElement("th")).textContent = "Detalhes"; // Detalhes do agrupamento
 
         thead.appendChild(trHead);
-        table.appendChild(tbody);
+        table.appendChild(thead);
 
         const tbody = document.createElement("tbody");
 
@@ -111,16 +69,12 @@ const gerarRelatorio = async () => {
             const tr = document.createElement("tr");
 
             const agrupamentoCell = document.createElement("td");
-            agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
+            agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento (por exemplo, data)
 
             const detalhesCell = document.createElement("td");
-
-            // Exibir nomes separados por ponto e vírgula
-            const nomesPresentes = agrupado[chave].map((item) =>
-                item.presentes.map((id) => nomePorId[id] || "Desconhecido").join("; ")
-            ).join(" | "); 
-
-            detalhesCell.textContent = nomesPresentes;
+            // Exibe os alunos presentes separados por ponto e vírgula
+            const detalhes = agrupado[chave].map((item) => item.presentes.join("; "));
+            detalhesCell.textContent = detalhes.join(" | "); // Se houver mais de um item, use pipe para separar
 
             tr.appendChild(agrupamentoCell);
             tr.appendChild(detalhesCell);
@@ -139,7 +93,6 @@ const gerarRelatorio = async () => {
 
 // Vincular evento para gerar o relatório
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
-
 
 // Função para baixar relatório como arquivo de texto
 const baixarRelatorioTXT = async () => {
