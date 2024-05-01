@@ -15,9 +15,9 @@
             const templateID = 'template_ti0v2rh'; // ID do template
 
             const templateParams = {
-                to_email: destinatario, // E-mail destinatário
-                subject: assunto, // Assunto do e-mail
-                message: mensagem, // Corpo do e-mail
+                to_email: 'joao_gabrielfk@hotmail.com', // E-mail destinatário
+                subject: 'Teste de E-mail', // Assunto do e-mail
+                message: 'Mensagem de teste', // Corpo do e-mail
             };
 
             emailjs.send(serviceID, templateID, templateParams)
@@ -33,6 +33,6 @@
 </head>
 <body>
     <!-- Botão para testar o envio de e-mail -->
-    <button onclick="enviarEmail('joao_gabrielfk@hotmail.com', 'Teste de E-mail', 'Mensagem de teste')">Enviar E-mail</button>
+    <button onclick="enviarEmail()">Enviar E-mail</button>
 </body>
 </html>
