@@ -12,143 +12,245 @@ const config = {
 const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
-const obterPresencaPorTurma = async () => {
-  const contagemPorTurma = {};
-  const contagemPorPessoaPorTurma = {};
-
+const obterPresencas = async () => {
   const presencasSnapshot = await db.collection("Presenças").get();
+  return presencasSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
 
-  presencasSnapshot.docs.forEach((doc) => {
-    const turma = doc.data().turma;
-    const presentes = doc.data().presentes;
+const obterAlunos = async () => {
+  const alunosSnapshot = await db.collection("Alunos").get();
+  return alunosSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
 
-    if (!contagemPorTurma[turma]) {
-      contagemPorTurma[turma] = 0;
-      contagemPorPessoaPorTurma[turma] = {};
+const obterRelatorioPorData = (presencas, alunos) => {
+  const relatorio = {};
+
+  presencas.forEach((presenca) => {
+    const data = presenca.data; // Assumindo que há um campo 'data'
+    const presentes = presenca.presentes;
+
+    if (!relatorio[data]) {
+      relatorio[data] = {};
     }
 
-    contagemPorTurma[turma]++;
-
     presentes.forEach((alunoId) => {
-      if (!contagemPorPessoaPorTurma[turma][alunoId]) {
-        contagemPorPessoaPorTurma[turma][alunoId] = 0;
+      if (!relatorio[data][alunoId]) {
+        relatorio[data][alunoId] = { alunoId, presencas: 0 };
       }
-      contagemPorPessoaPorTurma[turma][alunoId]++;
+      relatorio[data][alunoId].presencas++;
     });
   });
 
-  const alunosSnapshot = await db.collection("Alunos").get();
-
-  alunosSnapshot.docs.forEach((doc) => {
-    const alunoId = doc.id;
-    const alunoData = doc.data();
-
-    if (contagemPorPessoaPorTurma) {
-      for (const turma in contagemPorPessoaPorTurma) {
-        if (contagemPorPessoaPorTurma[turma][alunoId]) {
-          const presencas = contagemPorPessoaPorTurma[turma][alunoId];
-          const totalTurma = contagemPorTurma[turma];
-          const porcentagem = ((presencas / totalTurma) * 100).toFixed(2);
-
-          if (!contagemPorPessoaPorTurma[turma][alunoId]) {
-            contagemPorPessoaPorTurma[turma][alunoId] = {};
-          }
-
-          contagemPorPessoaPorTurma[turma][alunoId] = {
-            nome: alunoData.nome,
-            presenca: porcentagem,
-          };
-        }
+  // Associar nomes de alunos
+  alunos.forEach((aluno) => {
+    for (const data in relatorio) {
+      if (relatorio[data][aluno.id]) {
+        relatorio[data][aluno.id].nome = aluno.nome;
       }
     }
   });
 
-  return contagemPorPessoaPorTurma; // Retorna informações por turma
+  return relatorio;
 };
 
-const gerarRelatorio = async () => {
+const obterRelatorioPorAno = (presencas, alunos) => {
+  const relatorio = {};
+
+  presencas.forEach((presenca) => {
+    const ano = presenca.ano; // Assumindo que há um campo 'ano'
+    const presentes = presenca.presentes;
+
+    if (!relatorio[ano]) {
+      relatorio[ano] = {};
+    }
+
+    presentes.forEach((alunoId) => {
+      if (!relatorio[ano][alunoId]) {
+        relatorio[ano][alunoId] = { alunoId, presencas: 0 };
+      }
+      relatorio[ano][alunoId].presencas++;
+    });
+  });
+
+  alunos.forEach((aluno) => {
+    for (const ano in relatorio) {
+      if (relatorio[ano][aluno.id]) {
+        relatorio[ano][aluno.id].nome = aluno.nome;
+      }
+    }
+  });
+
+  return relatorio;
+};
+
+const obterRelatorioPorTurma = (presencas, alunos) => {
+  const relatorio = {};
+
+  presencas.forEach((presenca) => {
+    const turma = presenca.turma; // Assumindo que há um campo 'turma'
+    const presentes = presenca.presentes;
+
+    if (!relatorio[turma]) {
+      relatorio[turma] = {};
+    }
+
+    presentes.forEach((alunoId) => {
+      if (!relatorio[turma][alunoId]) {
+        relatorio[turma][alunoId] = { alunoId, presencas: 0 };
+      }
+      relatorio[turma][alunoId].presencas++;
+    });
+  });
+
+  alunos.forEach((aluno) => {
+    for (const turma in relatorio) {
+      if (relatorio[turma][aluno.id]) {
+        relatorio[turma][aluno.id].nome = aluno.nome;
+      }
+    }
+  });
+
+  return relatorio;
+};
+
+const obterRelatorioPorAluno = (presencas, alunos) => {
+  const relatorio = {};
+
+  alunos.forEach((aluno) => {
+    relatorio[aluno.id] = {
+      nome: aluno.nome,
+      presencas: 0,
+    };
+  });
+
+  presencas.forEach((presenca) => {
+    const presentes = presenca.presentes;
+
+    presentes.forEach((alunoId) => {
+      if (relatorio[alunoId]) {
+        relatorio[alunoId].presencas++;
+      }
+    });
+  });
+
+  return relatorio;
+};
+
+const gerarTabela = (relatorio, tipo) => {
   const relatorioTabela = document.getElementById("relatorio-tabela");
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
 
-  try {
-    const totalPorTurma = await obterPresencaPorTurma();
+  const table = document.createElement("table");
+  table.className = "table table-striped";
 
-    // Criar tabela para exibição do relatório
-    const table = document.createElement("table");
-    table.className = "table table-striped";
+  const thead = document.createElement("thead");
+  const trHead = document.createElement("tr");
 
-    const thead = document.createElement("thead");
-    const trHead = document.createElement("tr");
+  if (tipo === "Data") {
+    trHead.appendChild(document.createElement("th")).textContent = "Data";
+    trHead.appendChild(document.createElement("th")).textContent = "Alunos Presentes";
+  } else if (tipo === "Ano de Ensino") {
+    trHead.appendChild(document.createElement("th")).textContent = "Ano de Ensino";
+    trHead.appendChild(document.createElement("th")).textContent = "Alunos Presentes";
+  } else if (tipo === "Turma") {
     trHead.appendChild(document.createElement("th")).textContent = "Turma";
-    trHead.appendChild(document.createElement("th")).textContent = "Alunos e Presenças";
+    trHead.appendChild(document.createElement("th")).textContent = "Alunos Presentes";
+  } else if (tipo === "Aluno") {
+    trHead.appendChild(document.createElement("th")).textContent = "Aluno";
+    trHead.appendChild(document.createElement("th")).textContent = "Presenças";
+  }
 
-    thead.appendChild(trHead);
-    table.appendChild(thead);
+  thead.appendChild(trHead);
+  table.appendChild(thead);
 
-    const tbody = document.createElement("tbody");
+  const tbody = document.createElement("tbody");
 
-    for (const turma in totalPorTurma) {
+  if (tipo === "Data") {
+    for (const data in relatorio) {
       const tr = document.createElement("tr");
+      const dataCell = document.createElement("td");
+      const alunosCell = document.createElement("td");
 
-      const turmaCell = document.createElement("td");
-      turmaCell.textContent = turma;
+      dataCell.textContent = data;
+      alunosCell.textContent = Object.values(relatorio[data])
+        .map((aluno) => `${aluno.nome}: ${aluno.presencas} presenças`)
+        .join(", ");
 
-      const detalhesCell = document.createElement("td");
-
-      const detalhes = Object.values(totalPorTurma[turma])
-        .map((aluno) => `${aluno.nome}: ${aluno.presenca}%`)
-        .join("; ");
-
-      detalhesCell.textContent = detalhes;
-
-      tr.appendChild(turmaCell);
-      tr.appendChild(detalhesCell);
-
+      tr.appendChild(dataCell);
+      tr.appendChild(alunosCell);
       tbody.appendChild(tr);
     }
+  } else if (tipo === "Ano de Ensino") {
+    for (const ano in relatorio) {
+      const tr = document.createElement("tr");
+      const anoCell = document.createElement("td");
+      const alunosCell = document.createElement("td");
 
-    table.appendChild(tbody);
-    relatorioTabela.appendChild(table);
+      anoCell.textContent = ano;
+      alunosCell.textContent = Object.values(relatorio[ano])
+        .map((aluno) => `${aluno.nome}: ${aluno.presencas} presenças`)
+        .join(", ");
 
-    return totalPorTurma; // Retorna para uso na função de download
-  } catch (error) {
-    console.error("Erro ao gerar relatório:", error);
+      tr.appendChild(anoCell);
+      tr.appendChild(alunosCell);
+      tbody.appendChild(tr);
+    }
+  } else if (tipo === "Turma") {
+    for (const turma in relatorio) {
+      const tr = document.createElement("tr");
+      const turmaCell = document.createElement("td");
+      const alunosCell = document.createElement("td");
+
+      turmaCell.textContent = turma;
+      alunosCell.textContent = Object.values(relatorio[turma])
+        .map((aluno) => `${aluno.nome}: ${aluno.presencas} presenças`)
+        .join(", ");
+
+      tr.appendChild(turmaCell);
+      tr.appendChild(alunosCell);
+      tbody.appendChild(tr);
+    }
+  } else if (tipo === "Aluno") {
+    Object.values(relatorio).forEach((aluno) => {
+      const tr = document.createElement("tr");
+      const alunoCell = document.createElement("td");
+      const presencasCell = document.createElement("td");
+
+      alunoCell.textContent = aluno.nome;
+      presencasCell.textContent = aluno.presencas;
+
+      tr.appendChild(alunoCell);
+      tr.appendChild(presencasCell);
+      tbody.appendChild(tr);
+    });
+  }
+
+  table.appendChild(tbody);
+  relatorioTabela.appendChild(table);
+};
+
+const gerarRelatorio = async () => {
+  const opcao = document.getElementById("dropdown-filtro").value; // Assumindo que você tem um dropdown com ID "dropdown-filtro"
+  const presencas = await obterPresencas();
+  const alunos = await obterAlunos();
+
+  let relatorio;
+  if (opcao === "Data") {
+    relatorio = obterRelatorioPorData(presencas, alunos);
+    gerarTabela(relatorio, "Data");
+  } else if (opcao === "Ano de Ensino") {
+    relatorio = obterRelatorioPorAno(presencas, alunos);
+    gerarTabela(relatorio, "Ano de Ensino");
+  } else if (opcao === "Turma") {
+    relatorio = obterRelatorioPorTurma(presencas, alunos);
+    gerarTabela(relatorio, "Turma");
+  } else if (opcao === "Aluno") {
+    relatorio = obterRelatorioPorAluno(presencas, alunos);
+    gerarTabela(relatorio, "Aluno");
   }
 };
 
-// Função para baixar relatório como arquivo de texto
-const baixarRelatorioTXT = async () => {
-  const totalPorTurma = await gerarRelatorio();
-
-  if (!totalPorTurma) {
-    console.error("Não foi possível gerar o relatório para baixar.");
-    return;
-  }
-
-  let txtContent = "Relatório por Turma:\n\n";
-
-  for (const turma in totalPorTurma) {
-    txtContent += `Turma: ${turma}\n`;
-
-    txtContent += Object.values(totalPorTurma[turma])
-      .map((aluno) => `- ${aluno.nome}: ${aluno.presenca}%`)
-      .join("\n");
-
-    txtContent += "\n";
-  }
-
-  const blob = new Blob([txtContent], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "relatorio_por_turma.txt";
-  a.click();
-
-  URL.revokeObjectURL(url);
-};
-
-// Vincular evento para gerar o relatório
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
-document.getElementById("baixar-txt").addEventListener("click", baixarRelatorioTXT);
+
+
 
