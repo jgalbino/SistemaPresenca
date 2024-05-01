@@ -1,4 +1,4 @@
-//Deploy
+//DEOKIY
 
 // Configuração do Firebase
 const config = {
@@ -22,7 +22,7 @@ const obterPresencaPorTurmaEDatas = async () => {
 
   // Loop para organizar as presenças por turma e data
   presencasSnapshot.docs.forEach((doc) => {
-    const dataPresenca = doc.data().date; // Data da presença
+    const dataPresenca = doc.data().date; // Data da presença (corrigido para "date")
     const turma = doc.data().turma; // Turma associada
     const presentes = doc.data().presentes; // Lista de alunos presentes
 
@@ -46,14 +46,15 @@ const obterPresencaPorTurmaEDatas = async () => {
 const gerarRelatorio = async () => {
   const relatorioTabela = document.getElementById("relatorio-tabela");
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
-  let textoRelatorio = ''; // Para armazenar o texto do relatório
 
   try {
     const dadosPorTurmaEDatas = await obterPresencaPorTurmaEDatas(); // Obter os dados para o relatório
 
+    // Criar a tabela para exibição do relatório
     const table = document.createElement("table");
     table.className = "table table-striped";
 
+    // Cabeçalho da tabela
     const thead = document.createElement("thead");
     const trHead = document.createElement("tr");
     trHead.appendChild(document.createElement("th")).textContent = "Turma";
@@ -64,15 +65,15 @@ const gerarRelatorio = async () => {
     thead.appendChild(trHead);
     table.appendChild(thead);
 
-    textoRelatorio += 'Turma\tData\tAluno\tPresente\n'; // Adicionar cabeçalho ao relatório de texto
-
+    // Corpo da tabela
     const tbody = document.createElement("tbody");
 
-    // Iterar sobre cada turma, cada data e cada aluno para criar a tabela
+    // Iterar sobre cada turma, cada data, e cada aluno para criar a tabela de forma clara
     for (const turma in dadosPorTurmaEDatas) {
       for (const dataPresenca in dadosPorTurmaEDatas[turma]) {
-        const alunosPresentes = dadosPorTurmaEDatas[turma][dataPresenca];
+        const alunosPresentes = dadosPorTurmaEDatas[turma][dataPresenca]; // Lista de IDs de alunos presentes
 
+        // Para cada aluno presente, adicione uma linha à tabela
         for (const alunoId of alunosPresentes) {
           try {
             const alunoSnapshot = await db.collection("Alunos").doc(alunoId).get();
@@ -84,23 +85,20 @@ const gerarRelatorio = async () => {
             turmaCell.textContent = turma;
 
             const dataCell = document.createElement("td");
-            dataCell.textContent = dataPresenca;
+            dataCell.textContent = dataPresenca; // Data da presença
 
             const alunoCell = document.createElement("td");
             alunoCell.textContent = nomeAluno;
 
             const presenteCell = document.createElement("td");
-            presenteCell.textContent = "Sim";
+            presenteCell.textContent = "Sim"; // Sempre presente pois está na lista
 
             tr.appendChild(turmaCell);
             tr.appendChild(dataCell);
             tr.appendChild(alunoCell);
             tr.appendChild(presenteCell);
 
-            tbody.appendChild(tr);
-
-            // Adicionar dados ao texto do relatório
-            textoRelatorio += `${turma}\t${dataPresenca}\t${nomeAluno}\tSim\n`;
+            tbody.appendChild(tr); // Adiciona a linha ao corpo da tabela
           } catch (error) {
             console.error("Erro ao obter o nome do aluno:", error);
           }
@@ -109,22 +107,7 @@ const gerarRelatorio = async () => {
     }
 
     table.appendChild(tbody);
-    relatorioTabela.appendChild(table); // Adiciona a tabela à página
-
-    // Criar um link para download do relatório
-    const downloadLink = document.createElement("a");
-    const blob = new Blob([textoRelatorio], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-
-    downloadLink.href = url;
-    downloadLink.download = 'relatorio_presencas.txt';
-    downloadLink.textContent = 'Baixar Relatório';
-
-    // Adicionar o link de download à página
-    const downloadContainer = document.getElementById("download-relatorio");
-    downloadContainer.innerHTML = ''; // Limpa antes de adicionar
-    downloadContainer.appendChild(downloadLink);
-
+    relatorioTabela.appendChild(table); // Adicionar a tabela à página
   } catch (error) {
     console.error("Erro ao gerar relatório:", error);
   }
@@ -132,4 +115,3 @@ const gerarRelatorio = async () => {
 
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
 
-document.getElementById("baixar-txt").addEventListener("click", downloadLink);
