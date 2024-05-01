@@ -53,6 +53,7 @@ const loadTurmas = async () => {
 };
 
 // Função para contar presenças por turma e por pessoa
+// Função para contar presenças por turma e por pessoa
 function contarPresencasPorTurmaEPessoa() {
   db.collection("Presenças")
     .get()
@@ -104,6 +105,11 @@ function contarPresencasPorTurmaEPessoa() {
           const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
 
           mensagem += `${pessoa}: ${contagem} (${porcentagem}%) - ${status}\n`;
+
+          // Se a porcentagem for menor que 80%, enviar um e-mail para o aluno
+          if (porcentagem < 80) {
+            enviarEmailParaAluno(pessoa);
+          }
         }
       }
 
@@ -115,7 +121,49 @@ function contarPresencasPorTurmaEPessoa() {
     });
 }
 
+// Inicializa o EmailJS com seu User ID
+emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
+
+// Função para enviar e-mail para alunos com baixa presença
+function enviarEmailParaAluno(nomeAluno) {
+  const serviceID = 'service_djxccyq'; // ID do serviço
+  const templateID = 'template_01jpzky'; // ID do template
+
+  // Buscar e-mail do aluno no Firestore
+  db.collection("Alunos")
+    .where("nome", "==", nomeAluno) 
+    .get()
+    .then((querySnapshot) => {
+      if (querySnapshot.empty) {
+        console.error(`Nenhum aluno encontrado com o nome ${nomeAluno}`);
+        return;
+      }
+
+      const doc = querySnapshot.docs[0];
+      const destinatario = doc.data().email;
+
+      const templateParams = {
+        to_email: destinatario,
+        subject: 'Aviso de Baixa Presença',
+        message: `Olá ${nomeAluno}, notamos que sua presença está abaixo do limite mínimo de 80%. Por favor, esteja ciente que isso pode afetar sua aprovação no curso.`,
+      };
+
+      emailjs.send(serviceID, templateID, templateParams)
+        .then((response) => {
+          console.log('E-mail enviado com sucesso!', response.status, response.text);
+        })
+        .catch((error) => {
+          console.error('Erro ao enviar o e-mail:', error);
+        });
+    })
+    .catch((error) => {
+      console.error("Erro ao buscar o aluno:", error);
+    });
+}
+
+// Chama a função de contagem ao carregar a página
 window.onload = contarPresencasPorTurmaEPessoa;
+
 
 // Carregar turmas ao iniciar a página
 document.addEventListener("DOMContentLoaded", loadTurmas);
