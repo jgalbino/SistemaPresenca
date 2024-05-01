@@ -54,7 +54,7 @@ const loadTurmas = async () => {
 
 // Função para contar presenças por turma e por pessoa
 
-function contarPresencasPorTurmaEPessoa() {
+function verificarPresencasPorTurmaEPessoa() {
   const db = firebase.firestore();
 
   db.collection("Presenças")
@@ -63,163 +63,82 @@ function contarPresencasPorTurmaEPessoa() {
       const contagemPorTurma = {};
       const contagemPorPessoaPorTurma = {};
 
-      // Primeiro, contar as presenças por turma e por ID do aluno
       querySnapshot.forEach((doc) => {
         const turma = doc.data().turma;
         const presentes = doc.data().presentes;
 
         if (!contagemPorTurma[turma]) {
-          contagemPorTurma[turma] = 1;
+          contagemPorTurma[turma] = 0;
           contagemPorPessoaPorTurma[turma] = {};
-        } else {
-          contagemPorTurma[turma]++;
         }
+        
+        // Contar as presenças totais por turma
+        contagemPorTurma[turma]++;
 
-        // Contagem por pessoa dentro de cada turma usando IDs de alunos
+        // Contar as presenças por pessoa dentro de cada turma
         if (Array.isArray(presentes)) {
-          presentes.forEach((alunoID) => {
-            if (!contagemPorPessoaPorTurma[turma][alunoID]) {
-              contagemPorPessoaPorTurma[turma][alunoID] = 1;
-            } else {
-              contagemPorPessoaPorTurma[turma][alunoID]++;
+          presentes.forEach((pessoa) => {
+            if (!contagemPorPessoaPorTurma[turma][pessoa]) {
+              contagemPorPessoaPorTurma[turma][pessoa] = 0;
             }
+            contagemPorPessoaPorTurma[turma][pessoa]++;
           });
-        } else {
-          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
       });
 
-      // Agora, precisamos buscar os nomes dos alunos da coleção "Alunos"
-      const promessasNomes = [];
+      const promessasAlunos = [];
 
       for (const turma in contagemPorPessoaPorTurma) {
-        for (const alunoID in contagemPorPessoaPorTurma[turma]) {
-          promessasNomes.push(
-            db.collection("Alunos").doc(alunoID).get().then((doc) => {
-              if (doc.exists) {
-                const nomeAluno = doc.data().nome;
-                contagemPorPessoaPorTurma[turma][alunoID] = {
-                  contagem: contagemPorPessoaPorTurma[turma][alunoID],
-                  nome: nomeAluno,
-                };
-              } else {
-                console.warn(`Aluno com ID ${alunoID} não encontrado na coleção Alunos.`);
-              }
-            })
-          );
-        }
-      }
-
-      return Promise.all(promessasNomes);
-    })
-    .then(() => {
-      let mensagem = "Contagem de presenças por turma:\n";
-      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
-        mensagem += `Turma ${turma}: ${contagem}\n`;
-      }
-
-      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
-      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
-        mensagem += `Turma ${turma}:\n`;
         const totalPresencasTurma = contagemPorTurma[turma];
 
-        for (const [alunoID, dados] of Object.entries(pessoas)) {
-          const contagem = dados.contagem;
-          const nome = dados.nome || "Desconhecido"; // Se não conseguir obter o nome
-          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
-          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
+        for (const pessoa in contagemPorPessoaPorTurma[turma]) {
+          const contagemPresencas = contagemPorPessoaPorTurma[turma][pessoa];
+          const porcentagem = (contagemPresencas / totalPresencasTurma) * 100;
 
-          mensagem += `${nome}: ${contagem} (${porcentagem}%) - ${status}\n`;
+          if (porcentagem < 80) {
+            // Se a porcentagem for menor que 80%, buscar o nome e o email do aluno
+            const alunoRef = db.collection("Alunos").doc(pessoa);
+            promessasAlunos.push(
+              alunoRef.get().then((doc) => {
+                if (doc.exists) {
+                  const nome = doc.data().nome;
+                  const email = doc.data().email;
+                  return { nome, email, turma, porcentagem: porcentagem.toFixed(2) };
+                } else {
+                  console.warn(`Aluno com ID ${pessoa} não encontrado.`);
+                  return null;
+                }
+              })
+            );
+          }
         }
       }
 
-      alert(mensagem); // Exibe a mensagem final com nomes e porcentagens
+      return Promise.all(promessasAlunos);
+    })
+    .then((resultados) => {
+      let mensagem = "Alunos com menos de 80% de presença:\n";
+
+      resultados.forEach((resultado) => {
+        if (resultado) {
+          mensagem += `Turma: ${resultado.turma}\n`;
+          mensagem += `Nome: ${resultado.nome}\n`;
+          mensagem += `Email: ${resultado.email}\n`;
+          mensagem += `Presença: ${resultado.porcentagem}%\n`;
+          mensagem += "-------------------------\n";
+        }
+      });
+
+      alert(mensagem);
     })
     .catch((error) => {
-      console.error("Erro ao contar presenças:", error);
-      alert("Erro ao contar presenças. Veja o console para mais detalhes.");
+      console.error("Erro ao verificar presenças:", error);
+      alert("Erro ao verificar presenças. Veja o console para mais detalhes.");
     });
 }
 
-window.onload = contarPresencasPorTurmaEPessoa;
+window.onload = verificarPresencasPorTurmaEPessoa;
 
-
-// Carregar turmas ao iniciar a página
-document.addEventListener("DOMContentLoaded", loadTurmas);
-
-// Função para carregar presenças para uma turma e data
-const loadPresences = async () => {
-    const turmaId = document.getElementById("select-turma").value;
-    const date = document.getElementById("select-date").value;
-
-    const presenceTable = document.getElementById("presence-table");
-
-    if (!turmaId || !date) {
-        console.error("Erro ao carregar presença: Turma ou data não especificada.");
-        return;
-    }
-
-    presenceTable.innerHTML = ''; // Limpar tabela antes de carregar
-
-    try {
-        const alunosSnapshot = await db.collection("Alunos").where("turma", "==", turmaId).get();
-        const presencasSnapshot = await db.collection("Presenças")
-            .where("turma", "==", turmaId)
-            .where("date", "==", date)
-            .get();
-
-        // Obter IDs dos alunos presentes se a presença já existe
-        let presentes = [];
-        if (!presencasSnapshot.empty) {
-            const presencaDoc = presencasSnapshot.docs[0];
-            presentes = presencaDoc.data().presentes;
-        }
-
-        // Criar a tabela de presença
-        const table = document.createElement("table");
-        table.className = "table table-striped";
-
-        // Criar cabeçalho da tabela
-        const thead = document.createElement("thead");
-        const trHead = document.createElement("tr");
-        trHead.appendChild(document.createElement("th")).textContent = "Aluno";
-        trHead.appendChild(document.createElement("th")).textContent = "Presente";
-
-        thead.appendChild(trHead);
-        table.appendChild(thead);
-
-        // Criar corpo da tabela
-        const tbody = document.createElement("tbody");
-
-        alunosSnapshot.docs.forEach((doc) => {
-            const student = doc.data();
-            const tr = document.createElement("tr");
-
-            const nameCell = document.createElement("td");
-            nameCell.textContent = student.nome;
-            tr.appendChild(nameCell);
-
-            const checkCell = document.createElement("td");
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.id = `student-${doc.id}`;
-            checkbox.value = doc.id;
-            checkbox.checked = presentes.includes(doc.id); // Marcar se o aluno estava presente
-            checkCell.appendChild(checkbox);
-
-            tr.appendChild(checkCell);
-            tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        presenceTable.appendChild(table);
-    } catch (error) {
-        console.error("Erro ao carregar alunos ou presença:", error);
-    }
-};
-
-// Vincular evento para carregar presenças
-document.getElementById("load-presences").addEventListener("click", loadPresences);
 
 // Função para registrar ou salvar presença
 const registerPresence = (event) => {
