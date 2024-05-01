@@ -54,9 +54,13 @@ const loadTurmas = async () => {
 
 // Função para contar presenças por turma e por pessoa
 
-function verificarPresencasPorTurmaEPessoa() {
+// Inicializa o EmailJS com seu User ID
+emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
+
+function enviarEmailParaAlunosComBaixaPresenca() {
   const db = firebase.firestore();
 
+  // Identificar alunos com menos de 80% de presença
   db.collection("Presenças")
     .get()
     .then((querySnapshot) => {
@@ -71,11 +75,9 @@ function verificarPresencasPorTurmaEPessoa() {
           contagemPorTurma[turma] = 0;
           contagemPorPessoaPorTurma[turma] = {};
         }
-        
-        // Contar as presenças totais por turma
+
         contagemPorTurma[turma]++;
 
-        // Contar as presenças por pessoa dentro de cada turma
         if (Array.isArray(presentes)) {
           presentes.forEach((pessoa) => {
             if (!contagemPorPessoaPorTurma[turma][pessoa]) {
@@ -96,7 +98,6 @@ function verificarPresencasPorTurmaEPessoa() {
           const porcentagem = (contagemPresencas / totalPresencasTurma) * 100;
 
           if (porcentagem < 80) {
-            // Se a porcentagem for menor que 80%, buscar o nome e o email do aluno
             const alunoRef = db.collection("Alunos").doc(pessoa);
             promessasAlunos.push(
               alunoRef.get().then((doc) => {
@@ -117,19 +118,28 @@ function verificarPresencasPorTurmaEPessoa() {
       return Promise.all(promessasAlunos);
     })
     .then((resultados) => {
-      let mensagem = "Alunos com menos de 80% de presença:\n";
+      const serviceID = 'service_djxccyq'; // ID do serviço
+      const templateID = 'template_01jpzky'; // ID do template
 
       resultados.forEach((resultado) => {
         if (resultado) {
-          mensagem += `Turma: ${resultado.turma}\n`;
-          mensagem += `Nome: ${resultado.nome}\n`;
-          mensagem += `Email: ${resultado.email}\n`;
-          mensagem += `Presença: ${resultado.porcentagem}%\n`;
-          mensagem += "-------------------------\n";
+          const destinatario = resultado.email;
+          const templateParams = {
+            to_email: destinatario,
+            subject: 'Aviso de Presença', // Assunto do e-mail
+            message: `Olá ${resultado.nome}, você está com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique sua frequência para evitar problemas.`, // Mensagem do e-mail
+          };
+
+          emailjs.send(serviceID, templateID, templateParams)
+            .then(function (response) {
+              console.log(`E-mail enviado com sucesso para ${destinatario}!`, response.status, response.text);
+              alert(`E-mail enviado para:\nNome: ${resultado.nome}\nEmail: ${destinatario}\nPresença: ${resultado.porcentagem}%`);
+            }, function (error) {
+              console.error(`Falha ao enviar e-mail para ${destinatario}:`, error);
+              alert(`Erro ao enviar e-mail para ${destinatario}.`);
+            });
         }
       });
-
-      alert(mensagem);
     })
     .catch((error) => {
       console.error("Erro ao verificar presenças:", error);
@@ -137,7 +147,7 @@ function verificarPresencasPorTurmaEPessoa() {
     });
 }
 
-window.onload = verificarPresencasPorTurmaEPessoa;
+window.onload = enviarEmailParaAlunosComBaixaPresenca;
 
 
 // Função para registrar ou salvar presença
