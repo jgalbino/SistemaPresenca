@@ -32,5 +32,3 @@ Para conectar a aplicação ao Firebase, siga estas etapas:
    };
 
    firebase.initializeApp(firebaseConfig);
-
-teste
