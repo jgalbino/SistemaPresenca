@@ -12,7 +12,7 @@ const config = {
 const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
-// Função para obter presenças por aluno
+// Função para calcular a presença por aluno
 const obterPresencaPorAluno = async () => {
   const contagemPorTurma = {};
   const contagemPorPessoaPorTurma = {};
@@ -22,7 +22,6 @@ const obterPresencaPorAluno = async () => {
   presencasSnapshot.docs.forEach((doc) => {
     const turma = doc.data().turma;
     const presentes = doc.data().presentes;
-    const data = doc.data().date; // Data da presença
 
     if (!contagemPorTurma[turma]) {
       contagemPorTurma[turma] = 0;
@@ -33,19 +32,15 @@ const obterPresencaPorAluno = async () => {
 
     presentes.forEach((alunoId) => {
       if (!contagemPorPessoaPorTurma[turma][alunoId]) {
-        contagemPorPessoaPorTurma[turma][alunoId] = {
-          presencas: 0,
-          total: 0,
-          nome: "",
-          datas: [],
-        };
+        contagemPorPessoaPorTurma[turma][alunoId] = 0;
       }
-      contagemPorPessoaPorTurma[turma][alunoId].presencas++;
-      contagemPorPessoaPorTurma[turma][alunoId].datas.push(data);
+      contagemPorPessoaPorTurma[turma][alunoId]++;
     });
   });
 
   const alunosSnapshot = await db.collection("Alunos").get();
+
+  const totalPorAluno = {};
 
   alunosSnapshot.docs.forEach((doc) => {
     const alunoId = doc.id;
@@ -53,22 +48,23 @@ const obterPresencaPorAluno = async () => {
 
     for (const turma in contagemPorPessoaPorTurma) {
       if (contagemPorPessoaPorTurma[turma][alunoId]) {
-        const aluno = contagemPorPessoaPorTurma[turma][alunoId];
+        const presencas = contagemPorPessoaPorTurma[turma][alunoId];
         const totalTurma = contagemPorTurma[turma];
-        const porcentagem = ((aluno.presencas / totalTurma) * 100).toFixed(2);
+        const porcentagem = ((presencas / totalTurma) * 100).toFixed(2);
 
-        aluno.nome = alunoData.nome;
-        aluno.turma = turma;
-        aluno.ano = alunoData.ano;
-        aluno.presenca = porcentagem;
+        totalPorAluno[alunoId] = {
+          nome: alunoData.nome,
+          turma,
+          presenca: porcentagem,
+        };
       }
     }
   });
 
-  return contagemPorPessoaPorTurma;
+  return totalPorAluno;
 };
 
-// Função para gerar o relatório, com agrupamento dinâmico (aluno, turma, data ou ano de ensino)
+// Função para gerar relatório com agrupamento dinâmico (por aluno ou por turma)
 const gerarRelatorio = async () => {
   const agrupamento = document.getElementById("select-agrupamento").value;
   const relatorioTabela = document.getElementById("relatorio-tabela");
@@ -81,44 +77,34 @@ const gerarRelatorio = async () => {
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
 
   try {
-    const totalPorAluno = await obterPresencaPorAluno(); // Obter presenças por aluno
+    const totalPorAluno = await obterPresencaPorAluno();
     const agrupado = {};
 
-    // Agrupar conforme o critério selecionado
-    for (const turma in totalPorAluno) {
-      for (const alunoId in totalPorAluno[turma]) {
-        const alunoData = totalPorAluno[turma][alunoId];
+    for (const alunoId in totalPorAluno) {
+      const alunoData = totalPorAluno[alunoId];
 
-        let chave;
-        switch (agrupamento) {
-          case "aluno":
-            chave = alunoData.nome; // Agrupar por nome do aluno
-            break;
-          case "turma":
-            chave = alunoData.turma; // Agrupar por turma
-            break;
-          case "data":
-            chave = alunoData.datas.join(", "); // Agrupar por data (concatenar datas)
-            break;
-          case "ano":
-            chave = alunoData.ano; // Agrupar por ano de ensino
-            break;
-          default:
-            console.error("Critério de agrupamento inválido:", agrupamento);
-            return;
-        }
-
-        if (!agrupado[chave]) {
-          agrupado[chave] = [];
-        }
-
-        agrupado[chave].push({
-          nome: alunoData.nome,
-          turma: alunoData.turma,
-          presenca: alunoData.presenca,
-          datas: alunoData.datas,
-        });
+      let chave;
+      switch (agrupamento) {
+        case "aluno":
+          chave = alunoData.nome; // Agrupar por nome do aluno
+          break;
+        case "turma":
+          chave = alunoData.turma; // Agrupar por turma
+          break;
+        default:
+          console.error("Critério de agrupamento inválido:", agrupamento);
+          return;
       }
+
+      if (!agrupado[chave]) {
+        agrupado[chave] = [];
+      }
+
+      agrupado[chave].push({
+        nome: alunoData.nome,
+        turma: alunoData.turma,
+        presenca: alunoData.presenca,
+      });
     }
 
     // Criar a tabela do relatório
@@ -128,8 +114,8 @@ const gerarRelatorio = async () => {
     const thead = document.createElement("thead");
     const trHead = document.createElement("tr");
 
-    trHead.appendChild(document.createElement("th")).textContent = agrupamento === "aluno" ? "Aluno" : agrupamento === "turma" ? "Turma" : agrupamento === "data" ? "Data" : "Ano de Ensino";
-    trHead.appendChild(document.createElement("th")).textContent = "Detalhes";
+    trHead.appendChild(document.createElement("th")).textContent = agrupamento === "turma" ? "Turma" : "Aluno";
+    trHead.appendChild(document.createElement("th")).textContent = agrupamento === "turma" ? "Alunos" : "Presença";
 
     thead.appendChild(trHead);
     table.appendChild(thead);
@@ -137,24 +123,23 @@ const gerarRelatorio = async () => {
     const tbody = document.createElement("tbody");
 
     for (const chave em agrupado) {
-      agrupado[chave].forEach((aluno) => {
-        const tr = document.createElement("tr");
+      const tr = document.createElement("tr");
 
-        const chaveCell = document.createElement("td");
-        chaveCell.textContent = chave;
+      const chaveCell = document.createElement("td");
+      chaveCell.textContent = chave; // Chave de agrupamento (nome do aluno ou turma)
 
-        const detalhesCell = document.createElement("td");
+      const detalhesCell = document.createElement("td");
 
-        const detalhes = agrupamento === "turma"
-          ? agrupado[chave].map(aluno => `${aluno.nome}: ${aluno.presenca}%`).join("; ") 
-          : `Turma: ${aluno.turma}, Presença: ${aluno.presenca}%`;
+      const detalhes = agrupamento === "turma"
+        ? agrupado[chave].map(aluno => `${aluno.nome}: ${aluno.presenca}%`).join("; ") // Se agrupado por turma
+        : `${agrupado[chave][0].presenca}%`; // Se agrupado por aluno
 
-        detalhesCell.textContent = detalhes;
+      detalhesCell.textContent = detalhes;
 
-        tr.appendChild(chaveCell);
-        tr.appendChild(detalhesCell);
+      tr.appendChild(chaveCell);
+      tr.appendChild(detalhesCell);
 
-        tbody.appendChild(tr);
+      tbody.appendChild(tr);
     }
 
     table.appendChild(tbody);
@@ -166,6 +151,9 @@ const gerarRelatorio = async () => {
   }
 };
 
+// Vincular evento para gerar o relatório
+document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
+
 // Função para baixar o relatório como arquivo de texto
 const baixarRelatorioTXT = async () => {
   const agrupado = await gerarRelatorio();
@@ -175,16 +163,18 @@ const baixarRelatorioTXT = async () => {
     return;
   }
 
-  const agrupamento = document.getElementById("select-agrupamento").value;
+  let txtContent = agrupamento === "turma" ? "Relatório por Turma:\n\n" : "Relatório por Aluno:\n\n";
 
-  let txtContent = `Relatório por ${agrupamento}:\n\n`;
-
-  for (const chave em agrupado) {
+  for (const chave in agrupado) {
     txtContent += `- ${chave}\n`;
 
-    txtContent += agrupado[chave]
-      .map(aluno => `  - ${aluno.nome}: ${aluno.presenca}%`)
-      .join("\n");
+    if (agrupamento === "turma") {
+      txtContent += agrupado[chave]
+        .map(aluno => `  - ${aluno.nome}: ${aluno.presenca}%`)
+        .join("\n");
+    } else {
+      txtContent += `  - Presença: ${agrupado[chave][0].presenca}%\n`;
+    }
 
     txtContent += "\n";
   }
@@ -194,15 +184,13 @@ const baixarRelatorioTXT = async () => {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = `relatorio_por_${agrupamento}.txt`;
+  a.download = agrupamento === "turma" ? "relatorio_por_turma.txt" : "relatorio_por_aluno.txt";
   a.click();
 
   URL.revokeObjectURL(url);
 };
 
-// Vincular evento para gerar o relatório
+// Vincular eventos para gerar o relatório e baixar como TXT
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
-
-// Vincular evento para baixar o relatório como TXT
 document.getElementById("baixar-txt").addEventListener("click", baixarRelatorioTXT);
 
