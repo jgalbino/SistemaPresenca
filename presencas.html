@@ -83,7 +83,7 @@
                   const contagemPorNome = {}; // Para contagem por nome do aluno
 
                   // Buscar nomes dos alunos na coleção "Alunos"
-                  for (const alunoID in contagemPorAluno) {
+                  for (const presentes in contagemPorAluno) {
                       const prom = db.collection("Alunos").doc(presentes).get()
                           .then((doc) => {
                               if (doc.exists) {
