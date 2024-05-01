@@ -56,3 +56,19 @@ Para configurar a funcionalidade de envio de e-mails automáticos, siga estas et
      subject: "Alerta de Frequência Baixa",
      message: "Sua frequência está abaixo de 80%. Favor, regularizar sua presença."
    }, "SEU_PUBLIC_KEY")
+
+
+## Instalação e Execução do Sistema
+
+Para instalar e executar o sistema, siga estas etapas:
+
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/seu-usuario/SistemaPresenca.git
+
+2. **Acesse a pasta do projeto:**
+   ```bash
+   cd SistemaPresenca
+3. **Abra o arquivo 'index.html no navegador**
+   Certifique-se de estar conectado à internet para conectar-se ao Firebase e ao EmailJS.
+
