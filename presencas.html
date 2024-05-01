@@ -57,63 +57,30 @@
         }
 
                 function contarPresencasPorNome() {
-            // Obter todos os documentos da coleção "Presenças"
-            db.collection("Presenças")
+               db.collection("Presenças")
               .get()
               .then((querySnapshot) => {
-                  const contagemPorAluno = {}; // Para armazenar a contagem por ID do aluno
+                  const contagemPorTurma = {};
 
-                  // Iterar sobre cada documento para contar a presença por ID do aluno
+                  // Iterar sobre todos os documentos e contar por turma
                   querySnapshot.forEach((doc) => {
-                      const presentes = doc.data().presentes; // Array de IDs dos presentes
-                      if (presentes) {
-                          presentes.forEach((presentes) => {
-                              // Incrementar contagem para cada ID de aluno
-                              if (contagemPorAluno[presentes]) {
-                                  contagemPorAluno[presentes]++;
-                              } else {
-                                  contagemPorAluno[presentes] = 1;
-                              }
-                          });
+                      const turma = doc.data().presentes; // Assumindo que o campo "presentes"
+                      
+                      // Se a turma já estiver no objeto, incrementa; se não, inicializa com 1
+                      if (contagemPorTurma[presentes]) {
+                          contagemPorTurma[presentes]++;
+                      } else {
+                          contagemPorTurma[presentes] = 1;
                       }
                   });
 
-                  // Agora precisamos substituir os IDs pelo nome do aluno
-                  const promises = []; // Para armazenar todas as promessas de busca de nomes
-                  const contagemPorNome = {}; // Para contagem por nome do aluno
-
-                  // Buscar nomes dos alunos na coleção "Alunos"
-                  for (const presentes in contagemPorAluno) {
-                      const prom = db.collection("Alunos").doc(presentes).get()
-                          .then((doc) => {
-                              if (doc.exists) {
-                                  const nome = doc.data().nome; // Obter o nome do aluno
-                                  const quantidade = contagemPorAluno[presentes]; // Quantidade de presenças por ID
-
-                                  // Se o nome já existe, incrementa; se não, inicializa com a quantidade
-                                  if (contagemPorNome[nome]) {
-                                      contagemPorNome[nome] += quantidade;
-                                  } else {
-                                      contagemPorNome[nome] = quantidade;
-                                  }
-                              }
-                          });
-
-                      // Adiciona a promessa à lista para aguardar todas serem concluídas
-                      promises.push(prom);
+                  // Criar uma mensagem para o alerta com a contagem por turma
+                  let mensagem = "Contagem de presenças por turma:\n";
+                  for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+                      mensagem += `Turma ${turma}: ${contagem}\n`;
                   }
 
-                  // Esperar todas as promessas de busca de nome serem concluídas
-                  Promise.all(promises).then(() => {
-                      // Criar uma mensagem para o alerta com a contagem por nome do aluno
-                      let mensagem = "Contagem de presenças por nome do aluno:\n";
-                      for (const [nome, contagem] of Object.entries(contagemPorNome)) {
-                          mensagem += `Aluno ${nome}: ${contagem}\n`;
-                      }
-
-                      alert(mensagem); // Exibe o alerta com a contagem por nome
-                  });
-
+                  alert(mensagem); // Exibe o alerta com a contagem por turma
               })
               .catch((error) => {
                   console.error("Erro ao obter a coleção Presenças:", error);
