@@ -95,7 +95,6 @@ function enviarEmailParaAluno(nomeAluno) {
 }
 
 // Função para contar presenças por turma e por pessoa
-// Função para contar presenças por turma e por pessoa
 function contarPresencasPorTurmaEPessoa() {
   db.collection("Presenças")
     .get()
@@ -107,9 +106,14 @@ function contarPresencasPorTurmaEPessoa() {
         const turma = doc.data().turma;
         const presentes = doc.data().presentes;
 
-        if (!turma || !presentes) {
-          console.error("Documento de presença sem turma ou sem presentes.");
-          return; // Se não houver turma ou presentes, não faz nada
+        if (!turma) {
+          console.error(`Documento de presença sem turma. Documento ID: ${doc.id}`);
+          return;
+        }
+
+        if (!Array.isArray(presentes)) {
+          console.error(`Campo "presentes" no documento ${doc.id} não é um array.`);
+          return;
         }
 
         if (contagemPorTurma[turma]) {
@@ -119,53 +123,50 @@ function contarPresencasPorTurmaEPessoa() {
           contagemPorPessoaPorTurma[turma] = {}; // Inicializa a contagem por pessoa
         }
 
-        if (Array.isArray(presentes)) {
-          presentes.forEach((alunoId) => {
-            if (!alunoId) {
-              console.error("ID do aluno está vazio."); // Evita erro ao acessar subcoleção com caminho vazio
-              return; // Se o ID estiver vazio, ignora esta entrada
-            }
+        presentes.forEach((alunoId) => {
+          if (!alunoId) {
+            console.error(`ID do aluno vazio em documento ${doc.id}`);
+            return; // Se o ID do aluno for vazio, ignorar para evitar erro
+          }
 
-            db.collection("Alunos")
-              .doc(alunoId) // Certifique-se de que alunoId é válido
-              .get()
-              .then((alunoDoc) => {
-                if (!alunoDoc.exists) {
-                  console.warn(`Documento do aluno ${alunoId} não encontrado.`);
-                  return;
-                }
+          db.collection("Alunos")
+            .doc(alunoId) // Certifique-se de que alunoId não é vazio
+            .get()
+            .then((alunoDoc) => {
+              if (!alunoDoc.exists) {
+                console.warn(`Documento do aluno com ID ${alunoId} não encontrado.`);
+                return;
+              }
 
-                const nomeAluno = alunoDoc.data().nome;
+              const nomeAluno = alunoDoc.data().nome;
+              if (!nomeAluno) {
+                console.error(`Documento do aluno com ID ${alunoId} não tem campo "nome".`);
+                return;
+              }
 
-                if (nomeAluno) {
-                  if (contagemPorPessoaPorTurma[turma][nomeAluno]) {
-                    contagemPorPessoaPorTurma[turma][nomeAluno]++;
-                  } else {
-                    contagemPorPessoaPorTurma[turma][nomeAluno] = 1;
-                  }
+              // Agora que temos o nome do aluno, podemos contar presenças e enviar e-mail se necessário
+              if (contagemPorPessoaPorTurma[turma][nomeAluno]) {
+                contagemPorPessoaPorTurma[turma][nomeAluno]++;
+              } else {
+                contagemPorPessoaPorTurma[turma][nomeAluno] = 1;
+              }
 
-                  // Calcular a porcentagem de presenças e enviar e-mail se necessário
-                  const totalPresencasTurma = contagemPorTurma[turma];
-                  const porcentagem = ((contagemPorPessoaPorTurma[turma][nomeAluno] / totalPresencasTurma) * 100).toFixed(2);
+              const totalPresencasTurma = contagemPorTurma[turma];
+              const porcentagem = ((contagemPorPessoaPorTurma[turma][nomeAluno] / totalPresencasTurma) * 100).toFixed(2);
 
-                  if (porcentagem < 80) { // Se a porcentagem for menor que 80%, enviar e-mail
-                    enviarEmailParaAluno(nomeAluno); // Chama função de envio de e-mail
-                  }
-                } else {
-                  console.warn(`Documento do aluno ${alunoId} não tem campo 'nome'.`);
-                }
-              })
-              .catch((error) => {
-                console.error(`Erro ao buscar detalhes do aluno ${alunoId}:`, error);
-              });
-          });
-        } else {
-          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
-        }
+              if (porcentagem < 80) { // Enviar e-mail apenas se a presença estiver abaixo de 80%
+                enviarEmailParaAluno(nomeAluno); // Chamar a função de envio de e-mail
+              }
+            })
+            .catch((error) => {
+              console.error(`Erro ao buscar detalhes do aluno com ID ${alunoId}:`, error);
+            });
+        });
       });
 
+      // Criar mensagem para o alerta com a contagem por turma
       let mensagem = "Contagem de presenças por turma:\n";
-      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+      for (const [turma, contagem] de Object.entries(contagemPorTurma)) {
         mensagem += `Turma ${turma}: ${contagem}\n`;
       }
 
@@ -176,9 +177,8 @@ function contarPresencasPorTurmaEPessoa() {
     });
 }
 
-// Inicia a contagem ao carregar a página
+// Chama a função de contagem ao carregar a página
 window.onload = contarPresencasPorTurmaEPessoa;
-
 
 // Carregar turmas ao iniciar a página
 document.addEventListener("DOMContentLoaded", loadTurmas);
