@@ -1,5 +1,3 @@
-//DEOKIY
-
 // Configuração do Firebase
 const config = {
   apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
@@ -115,4 +113,4 @@ const gerarRelatorio = async () => {
 
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
 
-
+//deploy
