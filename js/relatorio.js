@@ -13,107 +13,109 @@ const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
 const gerarRelatorio = async () => {
-    const agrupamento = document.getElementById("select-agrupamento").value;
-    const relatorioTabela = document.getElementById("relatorio-tabela");
+  const agrupamento = document.getElementById("select-agrupamento").value;
+  const relatorioTabela = document.getElementById("relatorio-tabela");
 
-    if (!agrupamento) {
-        console.error("Critério de agrupamento não selecionado.");
-        return;
+  if (!agrupamento) {
+    console.error("Critério de agrupamento não selecionado.");
+    return;
+  }
+
+  relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
+
+  try {
+    const querySnapshot = await db.collection("Presenças").get();
+    const dados = querySnapshot.docs.map((doc) => doc.data());
+
+    const agrupado = {};
+
+    // Para agrupamento por "ano de ensino" ou "turma", precisamos de informações adicionais dos alunos
+    let alunosInfo = {};
+    if (agrupamento === "ano" || agrupamento === "turma" || agrupamento === "aluno") {
+      const alunosSnapshot = await db.collection("Alunos").get();
+      alunosInfo = alunosSnapshot.docs.reduce((map, doc) => {
+        const alunoData = doc.data();
+        map[doc.id] = alunoData; // Mapeia IDs para dados dos alunos
+        return map;
+      }, {});
     }
 
-    relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
+    dados.forEach((item) => {
+      let chave;
 
-    try {
-        const querySnapshot = await db.collection("Presenças").get();
-        const dados = querySnapshot.docs.map((doc) => doc.data());
+      switch (agrupamento) {
+        case "data":
+          chave = item.date; // Campo de data do Firestore
+          break;
+        case "ano":
+          chave = alunosInfo[item.presentes[0]]?.ano; // Ano de ensino do primeiro aluno presente
+          break;
+        case "turma":
+          chave = item.turma; // Identificação da turma
+          break;
+        case "aluno":
+          chave = alunosInfo[item.presentes[0]]?.nome; // Nome do primeiro aluno presente
+          break;
+        default:
+          console.error("Critério de agrupamento inválido:", agrupamento);
+          return;
+      }
 
-        const agrupado = {};
+      if (typeof chave === "undefined") {
+        console.error("Chave para agrupamento indefinida:", item);
+        return; // Se chave estiver indefinida, retorne para evitar erro
+      }
 
-        // Para agrupamento por "ano de ensino" ou "turma", precisamos de informações adicionais dos alunos
-        let alunosInfo = {};
-        if (agrupamento === "ano" || agrupamento === "turma" || agrupamento === "aluno") {
-            const alunosSnapshot = await db.collection("Alunos").get();
-            alunosInfo = alunosSnapshot.docs.reduce((map, doc) => {
-                const alunoData = doc.data();
-                map[doc.id] = alunoData; // Mapeia IDs para dados dos alunos
-                return map;
-            }, {});
-        }
+      if (!agrupado[chave]) {
+        agrupado[chave] = new Set(); // Usar set para eliminar duplicatas
+      }
 
-        dados.forEach((item) => {
-            let chave;
+      item.presentes.forEach((id) => {
+        const nome = alunosInfo[id]?.nome || "Desconhecido";
+        agrupado[chave].add(nome); // Adicionar ao set
+      });
+    });
 
-            switch (agrupamento) {
-                case "data":
-                    chave = item.date; // Campo de data do Firestore
-                    break;
-                case "ano":
-                    chave = alunosInfo[item.presentes[0]]?.ano; // Ano de ensino do primeiro aluno presente
-                    break;
-                case "turma":
-                    chave = item.turma; // Identificação da turma
-                    break;
-                case "aluno":
-                    chave = alunosInfo[item.presentes[0]]?.nome; // Nome do primeiro aluno presente
-                    break;
-                default:
-                    console.error("Critério de agrupamento inválido:", agrupamento);
-                    return;
-            }
+    // Criar tabela para exibição do relatório
+    const table = document.createElement("table");
+    table.className = "table table-striped";
 
-            if (typeof chave === "undefined") {
-                console.error("Chave para agrupamento indefinida:", item);
-                return; // Se chave estiver indefinida, retorne para evitar erro
-            }
+    const thead = document.createElement("thead");
+    const trHead = document.createElement("tr");
+    trHead.appendChild(document.createElement("th")).textContent = "Agrupamento";
+    trHead.appendChild(document.createElement("th")).textContent = "Detalhes";
 
-            if (!agrupado[chave]) {
-                agrupado[chave] = [];
-            }
+    thead.appendChild(trHead);
+    table.appendChild(thead);
 
-            agrupado[chave].push(item); // Adicionar ao agrupamento
-        });
+    const tbody = document.createElement("tbody");
 
-        // Criar tabela para exibição do relatório
-        const table = document.createElement("table");
-        table.className = "table table-striped";
+    for (const chave in agrupado) {
+      const tr = document.createElement("tr");
 
-        const thead = document.createElement("thead");
-        const trHead = document.createElement("tr");
-        trHead.appendChild(document.createElement("th")).textContent = "Agrupamento";
-        trHead.appendChild(document.createElement("th")).textContent = "Detalhes";
+      const agrupamentoCell = document.createElement("td");
+      agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
 
-        thead.appendChild(trHead);
-        table.appendChild(thead);
+      const detalhesCell = document.createElement("td");
 
-        const tbody = document.createElement("tbody");
+      // Criar uma lista única de nomes sem duplicatas
+      const detalhes = Array.from(agrupado[chave]).join("; ");
 
-        for (const chave in agrupado) {
-            const tr = document.createElement("tr");
+      detalhesCell.textContent = detalhes;
 
-            const agrupamentoCell = document.createElement("td");
-            agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
+      tr.appendChild(agrupamentoCell);
+      tr.appendChild(detalhesCell);
 
-            const detalhesCell = document.createElement("td");
-
-            const detalhes = agrupado[chave].map((item) => 
-                item.presentes.map((id) => alunosInfo[id]?.nome || "Desconhecido").join("; ")
-            ).join(" | "); 
-
-            detalhesCell.textContent = detalhes;
-
-            tr.appendChild(agrupamentoCell);
-            tr.appendChild(detalhesCell);
-
-            tbody.appendChild(tr);
-        }
-
-        table.appendChild(tbody);
-        relatorioTabela.appendChild(table);
-
-        return agrupado; // Retorna para uso na função de download de texto
-    } catch (error) {
-        console.error("Erro ao gerar relatório:", error);
+      tbody.appendChild(tr);
     }
+
+    table.appendChild(tbody);
+    relatorioTabela.appendChild(table);
+
+    return agrupado; // Retorna para uso na função de download de texto
+  } catch (error) {
+    console.error("Erro ao gerar relatório:", error);
+  }
 };
 
 // Vincular evento para gerar o relatório
