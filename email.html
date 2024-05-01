@@ -7,7 +7,7 @@
     <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <script type="text/javascript">
         // Inicializa o EmailJS com seu User ID
-        emailjs.init('service_djxccyq'); // Substitua pelo seu User ID do EmailJS
+        emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
 
         // Função para enviar e-mail de notificação
         function enviarEmail() {
@@ -18,7 +18,7 @@
                 message: 'Este é um teste para verificar se o envio de e-mails está funcionando.' // Mensagem do e-mail
             };
 
-            emailjs.send('service_djxccyq', 'template_ti0v2rh', templateParams)
+            emailjs.send('jTqaJyiSymGuaW1jj', 'template_ti0v2rh', templateParams)
                 .then(function (response) {
                     console.log('E-mail enviado com sucesso!', response.status, response.text);
                     alert('E-mail enviado com sucesso!');
