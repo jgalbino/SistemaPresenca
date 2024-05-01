@@ -1,16 +1,54 @@
 // Configuração do Firebase
 let config = {
-	apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
-	authDomain: "sistemaoctogono.firebaseapp.com",
-	projectId: "sistemaoctogono",
-	storageBucket: "sistemaoctogono.appspot.com",
-	messagingSenderId: "415747300285",
-	appId: "1:415747300285:web:2ae6ae2d51eefc7e1950d4"
+  apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
+  authDomain: "sistemaoctogono.firebaseapp.com",
+  projectId: "sistemaoctogono",
+  storageBucket: "sistemaoctogono.appspot.com",
+  messagingSenderId: "415747300285",
+  appId: "1:415747300285:web:2ae6ae2d51eefc7e1950d4"
 };
 
 // Inicializar Firebase
 const app = firebase.initializeApp(config);
 const db = firebase.firestore();
+
+const obterPresencaPorAluno = async () => {
+  const presencasSnapshot = await db.collection("Presenças").get();
+  const alunosSnapshot = await db.collection("Alunos").get();
+
+  const totalPorAluno = {};
+  const contagemPorTurma = {};
+
+  presencasSnapshot.docs.forEach((doc) => {
+    const turma = doc.data().turma;
+    const presentes = doc.data().presentes;
+
+    if (!contagemPorTurma[turma]) {
+      contagemPorTurma[turma] = 0;
+    }
+
+    contagemPorTurma[turma]++;
+
+    presentes.forEach((alunoId) => {
+      if (!totalPorAluno[alunoId]) {
+        totalPorAluno[alunoId] = { presencas: 0, total: 0, nome: "" };
+      }
+      totalPorAluno[alunoId].presencas++;
+      totalPorAluno[alunoId].total = contagemPorTurma[turma];
+    });
+  });
+
+  alunosSnapshot.docs.forEach((doc) => {
+    const alunoData = doc.data();
+    const alunoId = doc.id;
+
+    if (totalPorAluno[alunoId]) {
+      totalPorAluno[alunoId].nome = alunoData.nome;
+    }
+  });
+
+  return totalPorAluno;
+};
 
 const gerarRelatorio = async () => {
   const agrupamento = document.getElementById("select-agrupamento").value;
@@ -24,57 +62,36 @@ const gerarRelatorio = async () => {
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
 
   try {
-    const querySnapshot = await db.collection("Presenças").get();
-    const dados = querySnapshot.docs.map((doc) => doc.data());
-
+    const totalPorAluno = await obterPresencaPorAluno(); // Obter a porcentagem de presença
     const agrupado = {};
 
-    // Para agrupamento por "ano de ensino" ou "turma", precisamos de informações adicionais dos alunos
-    let alunosInfo = {};
-    if (agrupamento === "ano" || agrupamento === "turma" || agrupamento === "aluno") {
-      const alunosSnapshot = await db.collection("Alunos").get();
-      alunosInfo = alunosSnapshot.docs.reduce((map, doc) => {
-        const alunoData = doc.data();
-        map[doc.id] = alunoData; // Mapeia IDs para dados dos alunos
-        return map;
-      }, {});
-    }
+    for (const alunoId in totalPorAluno) {
+      const alunoData = totalPorAluno[alunoId];
+      const porcentagem = ((alunoData.presencas / alunoData.total) * 100).toFixed(2);
 
-    dados.forEach((item) => {
       let chave;
 
       switch (agrupamento) {
-        case "data":
-          chave = item.date; // Campo de data do Firestore
-          break;
         case "ano":
-          chave = alunosInfo[item.presentes[0]]?.ano; // Ano de ensino do primeiro aluno presente
+          chave = alunosInfo[alunoId]?.ano || "Desconhecido";
           break;
         case "turma":
-          chave = item.turma; // Identificação da turma
+          chave = alunosInfo[alunoId]?.turma || "Desconhecido";
           break;
         case "aluno":
-          chave = alunosInfo[item.presentes[0]]?.nome; // Nome do primeiro aluno presente
+          chave = alunoData.nome || "Desconhecido";
           break;
         default:
           console.error("Critério de agrupamento inválido:", agrupamento);
           return;
       }
 
-      if (typeof chave === "undefined") {
-        console.error("Chave para agrupamento indefinida:", item);
-        return; // Se chave estiver indefinida, retorne para evitar erro
-      }
-
       if (!agrupado[chave]) {
-        agrupado[chave] = new Set(); // Usar set para eliminar duplicatas
+        agrupado[chave] = [];
       }
 
-      item.presentes.forEach((id) => {
-        const nome = alunosInfo[id]?.nome || "Desconhecido";
-        agrupado[chave].add(nome); // Adicionar ao set
-      });
-    });
+      agrupado[chave].push({ nome: alunoData.nome, presenca: porcentagem });
+    }
 
     // Criar tabela para exibição do relatório
     const table = document.createElement("table");
@@ -84,6 +101,7 @@ const gerarRelatorio = async () => {
     const trHead = document.createElement("tr");
     trHead.appendChild(document.createElement("th")).textContent = "Agrupamento";
     trHead.appendChild(document.createElement("th")).textContent = "Detalhes";
+    trHead.appendChild(document.createElement("th")).textContent = "Presença";
 
     thead.appendChild(trHead);
     table.appendChild(thead);
@@ -91,22 +109,24 @@ const gerarRelatorio = async () => {
     const tbody = document.createElement("tbody");
 
     for (const chave in agrupado) {
-      const tr = document.createElement("tr");
+      agrupado[chave].forEach((aluno) => {
+        const tr = document.createElement("tr");
 
-      const agrupamentoCell = document.createElement("td");
-      agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
+        const agrupamentoCell = document.createElement("td");
+        agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
 
-      const detalhesCell = document.createElement("td");
+        const detalhesCell = document.createElement("td");
+        detalhesCell.textContent = aluno.nome; // Exibe o nome do aluno
 
-      // Criar uma lista única de nomes sem duplicatas
-      const detalhes = Array.from(agrupado[chave]).join("; ");
+        const presencaCell = document.createElement("td");
+        presencaCell.textContent = `${aluno.presenca}%`; // Exibe a porcentagem de presença
 
-      detalhesCell.textContent = detalhes;
+        tr.appendChild(agrupamentoCell);
+        tr.appendChild(detalhesCell);
+        tr.appendChild(presencaCell);
 
-      tr.appendChild(agrupamentoCell);
-      tr.appendChild(detalhesCell);
-
-      tbody.appendChild(tr);
+        tbody.appendChild(tr);
+      });
     }
 
     table.appendChild(tbody);
@@ -118,48 +138,34 @@ const gerarRelatorio = async () => {
   }
 };
 
-// Vincular evento para gerar o relatório
-document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
-
-
-// Função para baixar relatório como arquivo de texto
 const baixarRelatorioTXT = async () => {
-    const agrupado = await gerarRelatorio();
+  const agrupado = await gerarRelatorio();
 
-    if (!agrupado) {
-        console.error("Não foi possível gerar o relatório para baixar.");
-        return;
-    }
+  if (!agrupado) {
+    console.error("Não foi possível gerar o relatório para baixar.");
+    return;
+  }
 
-    // Criar o conteúdo do arquivo TXT
-    let txtContent = "Relatório de Faltas:\n\n";
+  let txtContent = "Relatório de Faltas:\n\n";
 
-    for (const chave in agrupado) {
-        txtContent += `Agrupamento: ${chave}\n`;
-        txtContent += "Detalhes:\n";
+  for (const chave in agrupado) {
+    agrupado[chave].forEach((aluno) => {
+      txtContent += `Agrupamento: ${chave}\n`;
+      txtContent += `Nome: ${aluno.nome}\n`;
+      txtContent += `Presença: ${aluno.presenca}%\n\n`;
+    });
+  }
 
-        agrupado[chave].forEach((item) => {
-            txtContent += `  - ${item.presentes.join(", ")}\n`;
-        });
+  const blob = new Blob([txtContent], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
 
-        txtContent += "\n";
-    }
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "relatorio_faltas.txt";
+  a.click();
 
-    // Criar um Blob para o arquivo TXT
-    const blob = new Blob([txtContent], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-
-    // Criar um link para download do arquivo TXT
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "relatorio_faltas.txt";
-    a.click(); // Clicar para iniciar o download
-
-    URL.revokeObjectURL(url); // Limpar o objeto após download
+  URL.revokeObjectURL(url);
 };
 
-// Vincular evento para gerar o relatório
 document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
-
-// Vincular evento para baixar relatório como TXT
 document.getElementById("baixar-txt").addEventListener("click", baixarRelatorioTXT);
