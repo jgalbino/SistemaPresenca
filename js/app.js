@@ -125,8 +125,8 @@ function enviarEmailParaAlunosComBaixaPresenca() {
           const destinatario = resultado.email;
           const templateParams = {
             to_email: destinatario,
-            subject: 'Aviso de Presença', // Assunto do e-mail
-            message: `Olá ${resultado.nome}, você está com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique sua frequência para evitar problemas.`, // Mensagem do e-mail
+            subject: 'Aviso de Presença', // Assunto do email
+            message: `Olá ${resultado.nome}, você está com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique sua frequência para evitar problemas.`, // Mensagem do email
           };
 
           emailjs.send(serviceID, templateID, templateParams)
@@ -146,7 +146,16 @@ function enviarEmailParaAlunosComBaixaPresenca() {
     });
 }
 
-window.onload = enviarEmailParaAlunosComBaixaPresenca;
+window.onload = function() {
+  const confirmacao = confirm("Você deseja enviar email para os pais dos alunos com menos de 80% de presença?");
+  
+  if (confirmacao) {
+    enviarEmailParaAlunosComBaixaPresenca();
+  } else {
+    alert("Ação cancelada. Nenhum email será enviado.");
+  }
+};
+
 
 // Função para registrar ou salvar presença
 const registerPresence = (event) => {
