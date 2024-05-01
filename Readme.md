@@ -2,15 +2,16 @@
 
 Bem-vindo ao repositório do Sistema de Controle de Frequência Escolar, uma aplicação web para controle de frequência de alunos em sala de aula. O sistema foi desenvolvido com HTML, CSS, JavaScript e integra o Firebase como backend para armazenamento em tempo real.
 
-## Recursos do Sistema
-- Registro de presença dos alunos em tempo real.
-- Interface amigável para professores e administradores.
-- Integração com Firebase para armazenamento de dados.
+## Funcionalidades do Sistema
+- **Registro de presença**: Professores podem registrar a presença dos alunos.
+- **Relatórios**: Visualize e faça download de relatórios de frequência.
+- **Envio de e-mails**: Alertas automáticos são enviados quando a frequência do aluno é menor que 80%.
 
 ## Pré-requisitos
 Para configurar e executar o sistema, você precisará do seguinte:
 - Um navegador web moderno (como Google Chrome, Mozilla Firefox ou Microsoft Edge).
-- Uma conta no Firebase para integração com o banco de dados.
+- Conta no Firebase para integração do banco de dados.
+- Conta no EmailJS para enviar e-mails automáticos.
 
 ## Configuração do Firebase
 Para conectar a aplicação ao Firebase, siga estas etapas:
@@ -34,8 +35,24 @@ Para conectar a aplicação ao Firebase, siga estas etapas:
    firebase.initializeApp(firebaseConfig);
 
 
-Temos pagina de login, pagina de registro de presença e pagina de exibição e download de relatório. 
+## Configuração do EmailJS
 
-nele é utilizado o emailJS para enviar email se a presença for < 80%, sendo assim é necessário cadastro no emailJS e vinculação de uma conta. 
+Para configurar a funcionalidade de envio de e-mails automáticos, siga estas etapas:
 
-caso queira utilizar essa funcao va até a pasta JS, app.js e configure suas credenciais do emailJS na referida funcao. 
+1. Acesse o [site do EmailJS](https://www.emailjs.com/) e crie uma conta gratuita ou faça login se já tiver uma.
+2. Configure um serviço de e-mail (como Gmail, Yahoo, etc.) dentro do EmailJS.
+3. Obtenha as credenciais necessárias para a integração com sua aplicação:
+   - **Service ID**
+   - **Template ID**
+   - **Public Key**
+4. No repositório do projeto, navegue até a pasta `js` e abra o arquivo `app.js`.
+5. Encontre a função que lida com o envio de e-mails e insira as credenciais do EmailJS nos locais apropriados.
+
+   Exemplo de configuração do EmailJS em `app.js`:
+   ```javascript
+   emailjs.send("SEU_SERVICE_ID", "SEU_TEMPLATE_ID", {
+     to_email: "aluno@example.com",
+     from_name: "Sistema de Frequência Escolar",
+     subject: "Alerta de Frequência Baixa",
+     message: "Sua frequência está abaixo de 80%. Favor, regularizar sua presença."
+   }, "SEU_PUBLIC_KEY")
