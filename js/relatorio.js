@@ -1,4 +1,4 @@
-
+//DEOKIY
 
 // Configuração do Firebase
 const config = {
