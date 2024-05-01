@@ -13,11 +13,10 @@ const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
 const obterPresencaPorAluno = async () => {
-  const presencasSnapshot = await db.collection("Presenças").get();
-  const alunosSnapshot = await db.collection("Alunos").get();
-
-  const totalPorAluno = {};
   const contagemPorTurma = {};
+  const contagemPorPessoaPorTurma = {};
+
+  const presencasSnapshot = await db.collection("Presenças").get();
 
   presencasSnapshot.docs.forEach((doc) => {
     const turma = doc.data().turma;
@@ -25,25 +24,43 @@ const obterPresencaPorAluno = async () => {
 
     if (!contagemPorTurma[turma]) {
       contagemPorTurma[turma] = 0;
+      contagemPorPessoaPorTurma[turma] = {};
     }
 
     contagemPorTurma[turma]++;
 
-    presentes.forEach((alunoId) => {
-      if (!totalPorAluno[alunoId]) {
-        totalPorAluno[alunoId] = { presencas: 0, total: 0, nome: "" };
-      }
-      totalPorAluno[alunoId].presencas++;
-      totalPorAluno[alunoId].total = contagemPorTurma[turma];
-    });
+    if (Array.isArray(presentes)) {
+      presentes.forEach((pessoa) => {
+        if (!contagemPorPessoaPorTurma[turma][pessoa]) {
+          contagemPorPessoaPorTurma[turma][pessoa] = 0;
+        }
+        contagemPorPessoaPorTurma[turma][pessoa]++;
+      });
+    }
   });
 
-  alunosSnapshot.docs.forEach((doc) => {
-    const alunoData = doc.data();
-    const alunoId = doc.id;
+  const alunosSnapshot = await db.collection("Alunos").get();
 
-    if (totalPorAluno[alunoId]) {
-      totalPorAluno[alunoId].nome = alunoData.nome;
+  const totalPorAluno = {};
+
+  alunosSnapshot.docs.forEach((doc) => {
+    const alunoId = doc.id;
+    const alunoData = doc.data();
+
+    if (contagemPorPessoaPorTurma) {
+      for (const turma in contagemPorPessoaPorTurma) {
+        if (contagemPorPessoaPorTurma[turma][alunoId]) {
+          const presencas = contagemPorPessoaPorTurma[turma][alunoId];
+          const totalTurma = contagemPorTurma[turma];
+          const porcentagem = ((presencas / totalTurma) * 100).toFixed(2);
+
+          totalPorAluno[alunoId] = {
+            nome: alunoData.nome,
+            presenca: porcentagem,
+            turma,
+          };
+        }
+      }
     }
   });
 
@@ -62,24 +79,23 @@ const gerarRelatorio = async () => {
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
 
   try {
-    const totalPorAluno = await obterPresencaPorAluno(); // Obter a porcentagem de presença
+    const totalPorAluno = await obterPresencaPorAluno();
     const agrupado = {};
 
     for (const alunoId in totalPorAluno) {
       const alunoData = totalPorAluno[alunoId];
-      const porcentagem = ((alunoData.presencas / alunoData.total) * 100).toFixed(2);
 
       let chave;
 
       switch (agrupamento) {
         case "ano":
-          chave = alunosInfo[alunoId]?.ano || "Desconhecido";
+          chave = alunoData.turma; // Se "ano" significa "turma", ajuste aqui
           break;
         case "turma":
-          chave = alunosInfo[alunoId]?.turma || "Desconhecido";
+          chave = alunoData.turma;
           break;
         case "aluno":
-          chave = alunoData.nome || "Desconhecido";
+          chave = alunoData.nome;
           break;
         default:
           console.error("Critério de agrupamento inválido:", agrupamento);
@@ -90,10 +106,12 @@ const gerarRelatorio = async () => {
         agrupado[chave] = [];
       }
 
-      agrupado[chave].push({ nome: alunoData.nome, presenca: porcentagem });
+      agrupado[chave].push({
+        nome: alunoData.nome,
+        presenca: alunoData.presenca,
+      });
     }
 
-    // Criar tabela para exibição do relatório
     const table = document.createElement("table");
     table.className = "table table-striped";
 
@@ -113,13 +131,13 @@ const gerarRelatorio = async () => {
         const tr = document.createElement("tr");
 
         const agrupamentoCell = document.createElement("td");
-        agrupamentoCell.textContent = chave; // Exibe a chave do agrupamento
+        agrupamentoCell.textContent = chave;
 
         const detalhesCell = document.createElement("td");
-        detalhesCell.textContent = aluno.nome; // Exibe o nome do aluno
+        detalhesCell.textContent = aluno.nome;
 
         const presencaCell = document.createElement("td");
-        presencaCell.textContent = `${aluno.presenca}%`; // Exibe a porcentagem de presença
+        presencaCell.textContent = `${aluno.presenca}%`;
 
         tr.appendChild(agrupamentoCell);
         tr.appendChild(detalhesCell);
@@ -132,7 +150,7 @@ const gerarRelatorio = async () => {
     table.appendChild(tbody);
     relatorioTabela.appendChild(table);
 
-    return agrupado; // Retorna para uso na função de download de texto
+    return agrupado;
   } catch (error) {
     console.error("Erro ao gerar relatório:", error);
   }
