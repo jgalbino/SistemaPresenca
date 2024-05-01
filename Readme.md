@@ -32,4 +32,10 @@ Para conectar a aplicação ao Firebase, siga estas etapas:
    };
 
    firebase.initializeApp(firebaseConfig);
-123
+
+
+Temos pagina de login, pagina de registro de presença e pagina de exibição e download de relatório. 
+
+nele é utilizado o emailJS para enviar email se a presença for < 80%, sendo assim é necessário cadastro no emailJS e vinculação de uma conta. 
+
+caso queira utilizar essa funcao va até a pasta JS, app.js e configure suas credenciais do emailJS na referida funcao. 
