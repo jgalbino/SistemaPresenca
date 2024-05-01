@@ -56,6 +56,7 @@ const obterPresencaPorTurmaEDatas = async () => {
 };
 
 // Função para gerar o relatório
+// Função para gerar o relatório
 const gerarRelatorio = async () => {
   const relatorioTabela = document.getElementById("relatorio-tabela");
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
@@ -86,8 +87,15 @@ const gerarRelatorio = async () => {
       for (const dataPresenca in dadosPorTurmaEDatas[turma]) {
         for (const alunoId in dadosPorTurmaEDatas[turma][dataPresenca]) {
           const alunoPresente = dadosPorTurmaEDatas[turma][dataPresenca][alunoId];
-          const alunoSnapshot = await db.collection("Alunos").doc(alunoId).get();
-          const nomeAluno = alunoSnapshot.data().nome;
+          let nomeAluno = ""; // Inicializa o nome do aluno
+
+          try {
+            const alunoSnapshot = await db.collection("Alunos").doc(alunoId).get();
+            nomeAluno = alunoSnapshot.exists ? alunoSnapshot.data().nome : "Aluno não encontrado"; // Obtém o nome do aluno ou define uma mensagem padrão se não encontrado
+          } catch (error) {
+            console.error("Erro ao obter o nome do aluno:", error);
+            nomeAluno = "Erro ao obter o nome do aluno";
+          }
 
           const tr = document.createElement("tr");
 
@@ -119,6 +127,7 @@ const gerarRelatorio = async () => {
     console.error("Erro ao gerar relatório:", error);
   }
 };
+
 
 // Função para baixar o relatório como arquivo de texto
 const baixarRelatorioTXT = async () => {
