@@ -54,94 +54,110 @@ const loadTurmas = async () => {
 
 // Função para contar presenças por turma e por pessoa
 
-function contarPresencasPorTurmaEPessoa() {
+// Função para contar presenças por turma e por pessoa
+// Inicializa o EmailJS com seu User ID
+emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
+
+function enviarEmailParaAlunosComBaixaPresenca() {
   const db = firebase.firestore();
 
+  // Identificar alunos com menos de 80% de presença
   db.collection("Presenças")
     .get()
     .then((querySnapshot) => {
       const contagemPorTurma = {};
       const contagemPorPessoaPorTurma = {};
 
-      // Primeiro, contar as presenças por turma e por ID do aluno
       querySnapshot.forEach((doc) => {
         const turma = doc.data().turma;
         const presentes = doc.data().presentes;
 
         if (!contagemPorTurma[turma]) {
-          contagemPorTurma[turma] = 1;
+          contagemPorTurma[turma] = 0;
           contagemPorPessoaPorTurma[turma] = {};
-        } else {
-          contagemPorTurma[turma]++;
         }
 
-        // Contagem por pessoa dentro de cada turma usando IDs de alunos
+        contagemPorTurma[turma]++;
+
         if (Array.isArray(presentes)) {
-          presentes.forEach((alunoID) => {
-            if (!contagemPorPessoaPorTurma[turma][alunoID]) {
-              contagemPorPessoaPorTurma[turma][alunoID] = 1;
-            } else {
-              contagemPorPessoaPorTurma[turma][alunoID]++;
+          presentes.forEach((pessoa) => {
+            if (!contagemPorPessoaPorTurma[turma][pessoa]) {
+              contagemPorPessoaPorTurma[turma][pessoa] = 0;
             }
+            contagemPorPessoaPorTurma[turma][pessoa]++;
           });
-        } else {
-          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
       });
 
-      // Agora, precisamos buscar os nomes dos alunos da coleção "Alunos"
-      const promessasNomes = [];
+      const promessasAlunos = [];
 
       for (const turma in contagemPorPessoaPorTurma) {
-        for (const alunoID in contagemPorPessoaPorTurma[turma]) {
-          promessasNomes.push(
-            db.collection("Alunos").doc(alunoID).get().then((doc) => {
-              if (doc.exists) {
-                const nomeAluno = doc.data().nome;
-                contagemPorPessoaPorTurma[turma][alunoID] = {
-                  contagem: contagemPorPessoaPorTurma[turma][alunoID],
-                  nome: nomeAluno,
-                };
-              } else {
-                console.warn(`Aluno com ID ${alunoID} não encontrado na coleção Alunos.`);
-              }
-            })
-          );
-        }
-      }
-
-      return Promise.all(promessasNomes);
-    })
-    .then(() => {
-      let mensagem = "Contagem de presenças por turma:\n";
-      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
-        mensagem += `Turma ${turma}: ${contagem}\n`;
-      }
-
-      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
-      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
-        mensagem += `Turma ${turma}:\n`;
         const totalPresencasTurma = contagemPorTurma[turma];
 
-        for (const [alunoID, dados] of Object.entries(pessoas)) {
-          const contagem = dados.contagem;
-          const nome = dados.nome || "Desconhecido"; // Se não conseguir obter o nome
-          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
-          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
+        for (const pessoa in contagemPorPessoaPorTurma[turma]) {
+          const contagemPresencas = contagemPorPessoaPorTurma[turma][pessoa];
+          const porcentagem = (contagemPresencas / totalPresencasTurma) * 100;
 
-          mensagem += `${nome}: ${contagem} (${porcentagem}%) - ${status}\n`;
+          if (porcentagem < 80) {
+            const alunoRef = db.collection("Alunos").doc(pessoa);
+            promessasAlunos.push(
+              alunoRef.get().then((doc) => {
+                if (doc.exists) {
+                  const nome = doc.data().nome;
+                  const email = doc.data().email;
+                  return { nome, email, turma, porcentagem: porcentagem.toFixed(2) };
+                } else {
+                  console.warn(`Aluno com ID ${pessoa} não encontrado.`);
+                  return null;
+                }
+              })
+            );
+          }
         }
       }
 
-      alert(mensagem); // Exibe a mensagem final com nomes e porcentagens
+      return Promise.all(promessasAlunos);
+    })
+    .then((resultados) => {
+      const serviceID = 'service_djxccyq'; // ID do serviço
+      const templateID = 'template_01jpzky'; // ID do template
+
+      resultados.forEach((resultado) => {
+        if (resultado) {
+          const destinatario = resultado.email;
+          const templateParams = {
+            to_email: destinatario,
+            subject: 'Aviso de Presença', // Assunto do email
+            message: `Caros pais, gostariamos de informar que ${resultado.nome} encontra-se com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique a frequência para evitar problemas. Qualquer dúvida estamos a disposição.`, // Mensagem do email
+          };
+
+          emailjs.send(serviceID, templateID, templateParams)
+            .then(function (response) {
+              console.log(`E-mail enviado com sucesso para ${destinatario}!`, response.status, response.text);
+              alert(`E-mail enviado para:\nNome: ${resultado.nome}\nEmail: ${destinatario}\nPresença: ${resultado.porcentagem}%`);
+            }, function (error) {
+              console.error(`Falha ao enviar e-mail para ${destinatario}:`, error);
+              alert(`Erro ao enviar e-mail para ${destinatario}.`);
+            });
+        }
+      });
     })
     .catch((error) => {
-      console.error("Erro ao contar presenças:", error);
-      alert("Erro ao contar presenças. Veja o console para mais detalhes.");
+      console.error("Erro ao verificar presenças:", error);
+      alert("Erro ao verificar presenças. Veja o console para mais detalhes.");
     });
 }
 
-window.onload = contarPresencasPorTurmaEPessoa;
+window.onload = function() {
+  const confirmacao = confirm("Você deseja enviar email para os pais dos alunos com menos de 80% de presença?");
+  
+  if (confirmacao) {
+    enviarEmailParaAlunosComBaixaPresenca();
+  } else {
+    alert("Ação cancelada. Nenhum email será enviado.");
+  }
+};
+
 
 
 // Carregar turmas ao iniciar a página
