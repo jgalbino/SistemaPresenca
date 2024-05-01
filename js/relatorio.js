@@ -1,45 +1,22 @@
-//DEOKIY
+// Função para obter todos os alunos por turma para garantir que a presença é registrada mesmo quando ausente
+const obterAlunosPorTurma = async () => {
+  const alunosPorTurma = {}; // Armazena alunos por turma
 
-// Configuração do Firebase
-const config = {
-  apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
-  authDomain: "sistemaoctogono.firebaseapp.com",
-  projectId: "sistemaoctogono",
-  storageBucket: "sistemaoctogono.appspot.com",
-  messagingSenderId: "415747300285",
-  appId: "1:415747300285:web:2ae6ae2d51eefc7e1950d4"
-};
+  const alunosSnapshot = await db.collection("Alunos").get();
 
-// Inicializar Firebase
-const app = firebase.initializeApp(config);
-const db = firebase.firestore();
+  alunosSnapshot.docs.forEach((doc) => {
+    const alunoId = doc.id;
+    const alunoData = doc.data();
+    const turma = alunoData.turma; // Turma do aluno
 
-// Função para obter presenças por turma e por data, com separação adequada
-const obterPresencaPorTurmaEDatas = async () => {
-  const dadosPorTurmaEDatas = {}; // Armazena as informações de presença por turma e por data
-
-  const presencasSnapshot = await db.collection("Presenças").get(); // Obter todas as presenças
-
-  // Loop para organizar as presenças por turma e data
-  presencasSnapshot.docs.forEach((doc) => {
-    const dataPresenca = doc.data().date; // Data da presença (corrigido para "date")
-    const turma = doc.data().turma; // Turma associada
-    const presentes = doc.data().presentes; // Lista de alunos presentes
-
-    if (!dadosPorTurmaEDatas[turma]) {
-      dadosPorTurmaEDatas[turma] = {}; // Inicializa a turma se ainda não existe
+    if (!alunosPorTurma[turma]) {
+      alunosPorTurma[turma] = [];
     }
 
-    if (!dadosPorTurmaEDatas[turma][dataPresenca]) {
-      dadosPorTurmaEDatas[turma][dataPresenca] = []; // Inicializa a lista de presenças para a data
-    }
-
-    presentes.forEach((alunoId) => {
-      dadosPorTurmaEDatas[turma][dataPresenca].push(alunoId); // Adiciona o ID do aluno à lista de presenças para a data
-    });
+    alunosPorTurma[turma].push({ id: alunoId, nome: alunoData.nome }); // Armazena o ID e o nome do aluno
   });
 
-  return dadosPorTurmaEDatas; // Retorna a estrutura de dados por turma e por data
+  return alunosPorTurma;
 };
 
 // Função para gerar o relatório
@@ -48,7 +25,8 @@ const gerarRelatorio = async () => {
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
 
   try {
-    const dadosPorTurmaEDatas = await obterPresencaPorTurmaEDatas(); // Obter os dados para o relatório
+    const dadosPorTurmaEDatas = await obterPresencaPorTurmaEDatas(); // Obter presenças
+    const alunosPorTurma = await obterAlunosPorTurma(); // Obter todos os alunos por turma
 
     // Criar a tabela para exibição do relatório
     const table = document.createElement("table");
@@ -68,41 +46,39 @@ const gerarRelatorio = async () => {
     // Corpo da tabela
     const tbody = document.createElement("tbody");
 
-    // Iterar sobre cada turma, cada data, e cada aluno para criar a tabela de forma clara
+    // Iterar sobre cada turma e cada data para garantir que todos os alunos são listados
     for (const turma in dadosPorTurmaEDatas) {
       for (const dataPresenca in dadosPorTurmaEDatas[turma]) {
         const alunosPresentes = dadosPorTurmaEDatas[turma][dataPresenca]; // Lista de IDs de alunos presentes
 
-        // Para cada aluno presente, adicione uma linha à tabela
-        for (const alunoId of alunosPresentes) {
-          try {
-            const alunoSnapshot = await db.collection("Alunos").doc(alunoId).get();
-            const nomeAluno = alunoSnapshot.exists ? alunoSnapshot.data().nome : "Desconhecido";
+        // Obter todos os alunos desta turma
+        const todosAlunos = alunosPorTurma[turma] || []; // Lista de todos os alunos por turma
 
-            const tr = document.createElement("tr");
+        // Adicionar linha para cada aluno na turma, indicando se estava presente ou não
+        todosAlunos.forEach(async (aluno) => {
+          let presente = alunosPresentes.includes(aluno.id); // Verifica se o aluno estava presente
 
-            const turmaCell = document.createElement("td");
-            turmaCell.textContent = turma;
+          const tr = document.createElement("tr");
 
-            const dataCell = document.createElement("td");
-            dataCell.textContent = dataPresenca; // Data da presença
+          const turmaCell = document.createElement("td");
+          turmaCell.textContent = turma;
 
-            const alunoCell = document.createElement("td");
-            alunoCell.textContent = nomeAluno;
+          const dataCell = document.createElement("td");
+          dataCell.textContent = dataPresenca; // Data da presença
 
-            const presenteCell = document.createElement("td");
-            presenteCell.textContent = "Sim"; // Sempre presente pois está na lista
+          const alunoCell = document.createElement("td");
+          alunoCell.textContent = aluno.nome;
 
-            tr.appendChild(turmaCell);
-            tr.appendChild(dataCell);
-            tr.appendChild(alunoCell);
-            tr.appendChild(presenteCell);
+          const presenteCell = document.createElement("td");
+          presenteCell.textContent = presente ? "Sim" : "Não"; // Indica se estava presente ou não
 
-            tbody.appendChild(tr); // Adiciona a linha ao corpo da tabela
-          } catch (error) {
-            console.error("Erro ao obter o nome do aluno:", error);
-          }
-        }
+          tr.appendChild(turmaCell);
+          tr.appendChild(dataCell);
+          tr.appendChild(alunoCell);
+          tr.appendChild(presenteCell);
+
+          tbody.appendChild(tr); // Adiciona a linha ao corpo da tabela
+        });
       }
     }
 
@@ -113,4 +89,5 @@ const gerarRelatorio = async () => {
   }
 };
 
-document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
+document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio); // Vincula evento ao botão
+
