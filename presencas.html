@@ -56,42 +56,49 @@
               });
         }
 
-                function contarPresencasPorNome() {
-               db.collection("Presenças")
-              .get()
-              .then((querySnapshot) => {
-                  const contagemPorTurma = {};
+function contarPresencasPorPessoa() {
+  db.collection("Presenças")
+    .get()
+    .then((querySnapshot) => {
+      const contagemPorPessoa = {};
 
-                  // Iterar sobre todos os documentos e contar por turma
-                  querySnapshot.forEach((doc) => {
-                      const turma = doc.data().presentes; // Assumindo que o campo "presentes"
-                      
-                      // Se a turma já estiver no objeto, incrementa; se não, inicializa com 1
-                      if (contagemPorTurma[presentes]) {
-                          contagemPorTurma[presentes]++;
-                      } else {
-                          contagemPorTurma[presentes] = 1;
-                      }
-                  });
+      // Iterar sobre todos os documentos e contar quantas vezes cada pessoa aparece no campo "presentes"
+      querySnapshot.forEach((doc) => {
+        const presentes = doc.data().presentes; // Assumindo que "presentes" é um array
 
-                  // Criar uma mensagem para o alerta com a contagem por turma
-                  let mensagem = "Contagem de presenças por turma:\n";
-                  for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
-                      mensagem += `Turma ${turma}: ${contagem}\n`;
-                  }
-
-                  alert(mensagem); // Exibe o alerta com a contagem por turma
-              })
-              .catch((error) => {
-                  console.error("Erro ao obter a coleção Presenças:", error);
-                  alert("Erro ao contar presenças. Veja o console para mais detalhes.");
-              });
+        // Checar se "presentes" é um array antes de iterar
+        if (Array.isArray(presentes)) {
+          presentes.forEach((pessoa) => {
+            // Se a pessoa já estiver no objeto, incrementa; se não, inicializa com 1
+            if (contagemPorPessoa[pessoa]) {
+              contagemPorPessoa[pessoa]++;
+            } else {
+              contagemPorPessoa[pessoa] = 1;
+            }
+          });
+        } else {
+          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
+      });
+
+      // Criar uma mensagem para o alerta com a contagem por pessoa
+      let mensagem = "Contagem de presenças por pessoa:\n";
+      for (const [pessoa, contagem] of Object.entries(contagemPorPessoa)) {
+        mensagem += `${pessoa}: ${contagem}\n`;
+      }
+
+      alert(mensagem); // Exibe o alerta com a contagem por pessoa
+    })
+    .catch((error) => {
+      console.error("Erro ao obter a coleção Presenças:", error);
+      alert("Erro ao contar presenças. Veja o console para mais detalhes.");
+    });
+}
         
     </script>
 </head>
 <body>
     <!-- Botão para contar presenças por turma -->
-    <button onclick="contarPresencasPorTurma(),contarPresencasPorNome()">Contar Presenças por Turma</button>
+    <button onclick="contarPresencasPorTurma(),contarPresencasPorPessoa()">Contar Presenças por Turma</button>
 </body>
 </html>
