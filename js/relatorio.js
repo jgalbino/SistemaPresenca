@@ -113,3 +113,4 @@ const gerarRelatorio = async () => {
   }
 };
 
+document.getElementById("gerar-relatorio").addEventListener("click", gerarRelatorio);
