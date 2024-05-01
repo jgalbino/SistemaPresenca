@@ -55,6 +55,7 @@ const loadTurmas = async () => {
 // Função para contar presenças por turma e por pessoa
 
 // Inicializa o EmailJS com seu User ID
+// Inicializa o EmailJS com seu User ID
 emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
 
 // Função para enviar e-mail para alunos com baixa presença
@@ -62,8 +63,9 @@ function enviarEmailParaAluno(nomeAluno) {
   const serviceID = 'service_djxccyq'; // ID do serviço
   const templateID = 'template_01jpzky'; // ID do template
 
+  // Buscar o e-mail do aluno no Firestore
   db.collection("Alunos")
-    .where("nome", "==", nomeAluno) // Buscar pelo nome do aluno
+    .where("nome", "==", nomeAluno) // Procurar pelo nome do aluno
     .get()
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
@@ -74,7 +76,6 @@ function enviarEmailParaAluno(nomeAluno) {
       const doc = querySnapshot.docs[0];
       const destinatário = doc.data().email; // Obter o e-mail do aluno
 
-      // Parâmetros para o template do e-mail
       const templateParams = {
         to_email: destinatário,
         subject: 'Aviso de Baixa Presença',
@@ -113,11 +114,10 @@ function contarPresencasPorTurmaEPessoa() {
           contagemPorPessoaPorTurma[turma] = {}; // Inicializa a contagem por pessoa
         }
 
-        // Se os presentes forem uma subcoleção, devemos buscar o nome do aluno
         if (Array.isArray(presentes)) {
           presentes.forEach((alunoId) => {
             db.collection("Alunos")
-              .doc(alunoId) // Acessa a subcoleção para obter detalhes do aluno
+              .doc(alunoId)
               .get()
               .then((alunoDoc) => {
                 const nomeAluno = alunoDoc.data().nome; // Obter o nome do aluno
@@ -127,39 +127,42 @@ function contarPresencasPorTurmaEPessoa() {
                 } else {
                   contagemPorPessoaPorTurma[turma][nomeAluno] = 1;
                 }
-
-                // Se a presença do aluno estiver abaixo de 80%, enviar e-mail
-                const totalPresencasTurma = contagemPorTurma[turma];
-                const porcentagem = ((contagemPorPessoaPorTurma[turma][nomeAluno] / totalPresencasTurma) * 100).toFixed(2);
-                if (porcentagem < 80) {
-                  enviarEmailParaAluno(nomeAluno); // Enviar o e-mail para o aluno
-                }
               })
               .catch((error) => {
                 console.error(`Erro ao buscar detalhes do aluno ${alunoId}:`, error);
               });
           });
-        } else {
-          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
       });
 
-      // Criar mensagem para o alerta com a contagem
+      // Agora, calculamos a porcentagem de presenças por pessoa por turma
+      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
+        const totalPresencasTurma = contagemPorTurma[turma];
+
+        for (const [nomeAluno, contagem] of Object.entries(pessoas)) {
+          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
+
+          if (porcentagem < 80) { // Enviar e-mail apenas se a presença estiver abaixo de 80%
+            enviarEmailParaAluno(nomeAluno); // Enviar e-mail para alunos com baixa presença
+          }
+        }
+      }
+
+      // Criar uma mensagem para o alerta com a contagem por turma
       let mensagem = "Contagem de presenças por turma:\n";
       for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
         mensagem += `Turma ${turma}: ${contagem}\n`;
       }
 
-      alert(mensagem); // Exibe o alerta com as contagens e porcentagens
+      alert(mensagem); // Exibe o alerta com as contagens
     })
     .catch((error) => {
       console.error("Erro ao contar presenças:", error);
     });
 }
 
-// Chama a função de contagem ao carregar a página
+// Inicia a contagem ao carregar a página
 window.onload = contarPresencasPorTurmaEPessoa;
-
 
 // Carregar turmas ao iniciar a página
 document.addEventListener("DOMContentLoaded", loadTurmas);
