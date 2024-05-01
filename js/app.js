@@ -55,7 +55,6 @@ const loadTurmas = async () => {
 // Função para contar presenças por turma e por pessoa
 
 // Inicializa o EmailJS com seu User ID
-// Inicializa o EmailJS com seu User ID
 emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
 
 // Função para enviar e-mail para alunos com baixa presença
@@ -96,6 +95,7 @@ function enviarEmailParaAluno(nomeAluno) {
 }
 
 // Função para contar presenças por turma e por pessoa
+// Função para contar presenças por turma e por pessoa
 function contarPresencasPorTurmaEPessoa() {
   db.collection("Presenças")
     .get()
@@ -107,6 +107,11 @@ function contarPresencasPorTurmaEPessoa() {
         const turma = doc.data().turma;
         const presentes = doc.data().presentes;
 
+        if (!turma || !presentes) {
+          console.error("Documento de presença sem turma ou sem presentes.");
+          return; // Se não houver turma ou presentes, não faz nada
+        }
+
         if (contagemPorTurma[turma]) {
           contagemPorTurma[turma]++;
         } else {
@@ -116,45 +121,55 @@ function contarPresencasPorTurmaEPessoa() {
 
         if (Array.isArray(presentes)) {
           presentes.forEach((alunoId) => {
+            if (!alunoId) {
+              console.error("ID do aluno está vazio."); // Evita erro ao acessar subcoleção com caminho vazio
+              return; // Se o ID estiver vazio, ignora esta entrada
+            }
+
             db.collection("Alunos")
-              .doc(alunoId)
+              .doc(alunoId) // Certifique-se de que alunoId é válido
               .get()
               .then((alunoDoc) => {
-                const nomeAluno = alunoDoc.data().nome; // Obter o nome do aluno
+                if (!alunoDoc.exists) {
+                  console.warn(`Documento do aluno ${alunoId} não encontrado.`);
+                  return;
+                }
 
-                if (contagemPorPessoaPorTurma[turma][nomeAluno]) {
-                  contagemPorPessoaPorTurma[turma][nomeAluno]++;
+                const nomeAluno = alunoDoc.data().nome;
+
+                if (nomeAluno) {
+                  if (contagemPorPessoaPorTurma[turma][nomeAluno]) {
+                    contagemPorPessoaPorTurma[turma][nomeAluno]++;
+                  } else {
+                    contagemPorPessoaPorTurma[turma][nomeAluno] = 1;
+                  }
+
+                  // Calcular a porcentagem de presenças e enviar e-mail se necessário
+                  const totalPresencasTurma = contagemPorTurma[turma];
+                  const porcentagem = ((contagemPorPessoaPorTurma[turma][nomeAluno] / totalPresencasTurma) * 100).toFixed(2);
+
+                  if (porcentagem < 80) { // Se a porcentagem for menor que 80%, enviar e-mail
+                    enviarEmailParaAluno(nomeAluno); // Chama função de envio de e-mail
+                  }
                 } else {
-                  contagemPorPessoaPorTurma[turma][nomeAluno] = 1;
+                  console.warn(`Documento do aluno ${alunoId} não tem campo 'nome'.`);
                 }
               })
               .catch((error) => {
                 console.error(`Erro ao buscar detalhes do aluno ${alunoId}:`, error);
               });
           });
+        } else {
+          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
       });
 
-      // Agora, calculamos a porcentagem de presenças por pessoa por turma
-      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
-        const totalPresencasTurma = contagemPorTurma[turma];
-
-        for (const [nomeAluno, contagem] of Object.entries(pessoas)) {
-          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
-
-          if (porcentagem < 80) { // Enviar e-mail apenas se a presença estiver abaixo de 80%
-            enviarEmailParaAluno(nomeAluno); // Enviar e-mail para alunos com baixa presença
-          }
-        }
-      }
-
-      // Criar uma mensagem para o alerta com a contagem por turma
       let mensagem = "Contagem de presenças por turma:\n";
       for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
         mensagem += `Turma ${turma}: ${contagem}\n`;
       }
 
-      alert(mensagem); // Exibe o alerta com as contagens
+      alert(mensagem); // Exibe o alerta com as contagens por turma
     })
     .catch((error) => {
       console.error("Erro ao contar presenças:", error);
@@ -163,6 +178,7 @@ function contarPresencasPorTurmaEPessoa() {
 
 // Inicia a contagem ao carregar a página
 window.onload = contarPresencasPorTurmaEPessoa;
+
 
 // Carregar turmas ao iniciar a página
 document.addEventListener("DOMContentLoaded", loadTurmas);
