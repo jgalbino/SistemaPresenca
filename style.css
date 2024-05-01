@@ -92,3 +92,63 @@ input:checked + .slider:before {
     th {
         background-color: #f2f2f2;
     }
+
+body {
+    margin: 0;
+}
+.main-login{
+    width: 100vw;
+    height: 100vh;
+    background: #6FF09C;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+
+.top-login{
+    width: 50vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+}
+.top-login  h1{
+    color: #545454;
+}
+.top-login-imagem{
+    width: 35vw;
+}
+
+.right-login{
+    width: 50vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.card-login {
+    width: 60%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 30px 35px;
+    background:#8bf3af;
+    border-radius: 20px;
+    box-shadow: 0px 10px 40px #405e44;
+}
+.card-login h1 {
+   
+    color: #545454;
+    font-weight: 800;
+    margin: 0;
+ 
+}
+
+
