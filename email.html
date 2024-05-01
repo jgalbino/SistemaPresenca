@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Envio de E-mail</title>
+    <!-- Importa o script do EmailJS -->
+    <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <script type="text/javascript">
+        // Inicializa o EmailJS com seu User ID
+        emailjs.init('service_djxccyq'); // Substitua pelo seu User ID do EmailJS
+
+        // Função para enviar e-mail de notificação
+        function enviarEmail() {
+            // Substitua 'SEU_SERVICE_ID' e 'SEU_TEMPLATE_ID' pelos seus valores do EmailJS
+            const templateParams = {
+                to_email: 'escolaoctogono@gmail.com', // E-mail destinatário
+                subject: 'Teste de Envio de E-mail', // Assunto do e-mail
+                message: 'Este é um teste para verificar se o envio de e-mails está funcionando.' // Mensagem do e-mail
+            };
+
+            emailjs.send('service_djxccyq', 'template_ti0v2rh', templateParams)
+                .then(function (response) {
+                    console.log('E-mail enviado com sucesso!', response.status, response.text);
+                    alert('E-mail enviado com sucesso!');
+                }, function (error) {
+                    console.error('Falha ao enviar o e-mail:', error);
+                    alert('Erro ao enviar o e-mail. Veja o console para mais detalhes.');
+                });
+        }
+    </script>
+</head>
+<body>
+    <!-- Botão para testar o envio de e-mail -->
+    <button onclick="enviarEmail()">Enviar E-mail</button>
+</body>
+</html>
