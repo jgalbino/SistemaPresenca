@@ -49,6 +49,41 @@ Para conectar a aplicação ao Firebase, siga estas etapas:
 
    firebase.initializeApp(firebaseConfig);
 
+# Estrutura do Banco de Dados
+
+O sistema de controle de frequência escolar utiliza quatro coleções principais para armazenar dados sobre alunos, aulas, presenças e turmas. Cada coleção tem um conjunto específico de campos para representar diferentes tipos de informações.
+
+## Coleções e Campos
+
+1. **Alunos**
+   - Armazena informações sobre os alunos da escola.
+   - Cada documento na coleção deve conter os seguintes campos:
+     - `ano`: O ano de ingresso do aluno na escola.
+     - `email`: O e-mail de contato do aluno.
+     - `nome`: O nome completo do aluno.
+     - `turma`: O identificador ou nome da turma a qual o aluno pertence.
+
+2. **Aulas**
+   - Armazena informações sobre aulas ministradas em cada turma.
+   - Cada documento na coleção deve conter os seguintes campos:
+     - `date`: A data em que a aula ocorreu (recomenda-se usar o formato ISO 8601 para consistência, como `YYYY-MM-DD`).
+     - `turma`: O identificador ou nome da turma associada à aula.
+
+3. **Presenças**
+   - Armazena dados sobre a presença dos alunos em cada aula.
+   - Cada documento na coleção deve conter:
+     - `date`: A data em que a presença foi registrada.
+     - `presentes`: Um array contendo os identificadores dos alunos presentes na aula.
+     - `turma`: O identificador ou nome da turma associada à presença.
+
+4. **Turmas**
+   - Armazena informações sobre as turmas da escola.
+   - Cada subcoleção deve ser nomeada de acordo com o nome da turma.
+   - Cada documento na subcoleção deve conter os seguintes campos:
+     - `ano`: O ano ao qual a turma pertence.
+     - `nome`: O nome da turma.
+
+
 
 ## Configuração do EmailJS
 
