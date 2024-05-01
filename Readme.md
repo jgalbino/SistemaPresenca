@@ -106,5 +106,3 @@ Para configurar a funcionalidade de envio de e-mails automáticos, siga estas et
      subject: "Alerta de Frequência Baixa",
      message: "Sua frequência está abaixo de 80%. Favor, regularizar sua presença."
    }, "SEU_PUBLIC_KEY")
-
-//
