@@ -52,6 +52,71 @@ const loadTurmas = async () => {
     }
 };
 
+
+function contarPresencasPorTurmaEPessoa() {
+  db.collection("Presenças")
+    .get()
+    .then((querySnapshot) => {
+      const contagemPorTurma = {};
+      const contagemPorPessoaPorTurma = {};
+
+      // Iterar sobre todos os documentos para contar por turma e por pessoa em cada turma
+      querySnapshot.forEach((doc) => {
+        const turma = doc.data().turma;
+        const presentes = doc.data().presentes;
+
+        // Contagem por turma
+        if (contagemPorTurma[turma]) {
+          contagemPorTurma[turma]++;
+        } else {
+          contagemPorTurma[turma] = 1;
+          contagemPorPessoaPorTurma[turma] = {}; // Inicializa a contagem por pessoa
+        }
+
+        // Contagem por pessoa dentro de cada turma
+        if (Array.isArray(presentes)) {
+          presentes.forEach((pessoa) => {
+            if (contagemPorPessoaPorTurma[turma][pessoa]) {
+              contagemPorPessoaPorTurma[turma][pessoa]++;
+            } else {
+              contagemPorPessoaPorTurma[turma][pessoa] = 1;
+            }
+          });
+        } else {
+          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
+        }
+      });
+
+      // Criar uma mensagem para o alerta com a contagem por turma
+      let mensagem = "Contagem de presenças por turma:\n";
+      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+        mensagem += `Turma ${turma}: ${contagem}\n`;
+      }
+
+      // Adicionar contagem por pessoa e calcular a porcentagem de presenças por turma
+      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
+      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
+        mensagem += `Turma ${turma}:\n`;
+        const totalPresencasTurma = contagemPorTurma[turma];
+
+        for (const [pessoa, contagem] of Object.entries(pessoas)) {
+          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
+          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
+
+          mensagem += `${pessoa}: ${contagem} (${porcentagem}%) - ${status}\n`;
+        }
+      }
+
+      alert(mensagem); // Exibe o alerta com as contagens e as porcentagens
+    })
+    .catch((error) => {
+      console.error("Erro ao obter a coleção Presenças:", error);
+      alert("Erro ao contar presenças. Veja o console para mais detalhes.");
+    });
+}
+
+window.onload = contarPresencasPorTurmaEPessoa;
+
 // Carregar turmas ao iniciar a página
 document.addEventListener("DOMContentLoaded", loadTurmas);
 
