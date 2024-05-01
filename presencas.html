@@ -67,7 +67,7 @@
                   querySnapshot.forEach((doc) => {
                       const presentes = doc.data().presentes; // Array de IDs dos presentes
                       if (presentes) {
-                          presentes.forEach((alunoID) => {
+                          presentes.forEach((presentes) => {
                               // Incrementar contagem para cada ID de aluno
                               if (contagemPorAluno[presentes]) {
                                   contagemPorAluno[presentes]++;
