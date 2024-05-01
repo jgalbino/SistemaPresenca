@@ -88,22 +88,26 @@
                 <button class="btn btn-light btn-adjust-font" onclick="ajustarFonte(-2)">Diminuir Fonte</button>
             </li>
             <!-- Botão de Logout em Vermelho -->
-            <li class="nav-item">
-                <a class="nav-link text-danger" href="#">Logout</a>
+             <li class="nav-item">
+                <a href="#" onclick="logout()" class="btn btn-danger" role="button">Logout</a>
             </li>
         </ul>
     </div>
 </nav>
 
 <!-- Layout com barra lateral e conteúdo principal -->
+<!-- Layout de duas colunas para barra lateral sem espaço extra à esquerda -->
 <div class="container-fluid full-height d-flex flex-row p-0">
-    <!-- Barra lateral para menu -->
-    <div class="col-md-3 bg-dark-gray d-flex flex-column p-0">
+    <!-- Barra lateral para menu com fundo cinza escuro -->
+    <div class="col-md-3 bg-dark-gray sidebar d-flex flex-column p-0"> <!-- Sem padding -->
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link text-white" href="#relatorio-faltas">Relatório de Faltas</a>
+                <a class="nav-link text-white" href="app.html">Registrar/Visualizar Presença</a>
             </li>
-            <!-- Outros links para o menu -->
+            <li class="nav-item">
+                <a class="nav-link text-white" href="relatorio.html">Relatório de Faltas</a>
+            </li>
+            <!-- Outros links de menu -->
         </ul>
     </div>
 
