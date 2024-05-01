@@ -58,10 +58,8 @@ function enviarEmailParaAluno(nomeAluno, turma) {
   const serviceID = 'service_djxccyq'; // ID do serviço
   const templateID = 'template_01jpzky'; // ID do template
 
-  // Buscar e-mail do aluno na subcoleção "Alunos" da turma
-  db.collection("Turmas")
-    .doc(turma)
-    .collection("Alunos")
+  // Buscar e-mail do aluno na subcoleção "Alunos" 
+  db.collection("Alunos")
     .where("nome", "==", nomeAluno)
     .get()
     .then((querySnapshot) => {
