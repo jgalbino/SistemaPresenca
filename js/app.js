@@ -52,7 +52,7 @@ const loadTurmas = async () => {
     }
 };
 
-
+// Função para contar presenças por turma e por pessoa
 function contarPresencasPorTurmaEPessoa() {
   db.collection("Presenças")
     .get()
