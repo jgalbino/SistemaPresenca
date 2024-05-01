@@ -24,56 +24,33 @@
         const db = firebase.firestore();
 
         // Função para contar presenças por turma
-        function contarPresencasPorTurma() {
-            db.collection("Presenças")
-              .get()
-              .then((querySnapshot) => {
-                  const contagemPorTurma = {};
-
-                  // Iterar sobre todos os documentos e contar por turma
-                  querySnapshot.forEach((doc) => {
-                      const turma = doc.data().turma; // Assumindo que o campo "turma"
-                      
-                      // Se a turma já estiver no objeto, incrementa; se não, inicializa com 1
-                      if (contagemPorTurma[turma]) {
-                          contagemPorTurma[turma]++;
-                      } else {
-                          contagemPorTurma[turma] = 1;
-                      }
-                  });
-
-                  // Criar uma mensagem para o alerta com a contagem por turma
-                  let mensagem = "Contagem de presenças por turma:\n";
-                  for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
-                      mensagem += `Turma ${turma}: ${contagem}\n`;
-                  }
-
-                  alert(mensagem); // Exibe o alerta com a contagem por turma
-              })
-              .catch((error) => {
-                  console.error("Erro ao obter a coleção Presenças:", error);
-                  alert("Erro ao contar presenças. Veja o console para mais detalhes.");
-              });
-        }
-
-function contarPresencasPorPessoa() {
+function contarPresencasPorTurmaEPessoa() {
   db.collection("Presenças")
     .get()
     .then((querySnapshot) => {
-      const contagemPorPessoa = {};
+      const contagemPorTurma = {};
+      const contagemPorPessoaPorTurma = {};
 
-      // Iterar sobre todos os documentos e contar quantas vezes cada pessoa aparece no campo "presentes"
+      // Iterar sobre todos os documentos para contar por turma e por pessoa em cada turma
       querySnapshot.forEach((doc) => {
-        const presentes = doc.data().presentes; // Assumindo que "presentes" é um array
+        const turma = doc.data().turma;
+        const presentes = doc.data().presentes;
 
-        // Checar se "presentes" é um array antes de iterar
+        // Contagem por turma
+        if (contagemPorTurma[turma]) {
+          contagemPorTurma[turma]++;
+        } else {
+          contagemPorTurma[turma] = 1;
+          contagemPorPessoaPorTurma[turma] = {}; // Inicializa a contagem por pessoa
+        }
+
+        // Contagem por pessoa dentro de cada turma
         if (Array.isArray(presentes)) {
           presentes.forEach((pessoa) => {
-            // Se a pessoa já estiver no objeto, incrementa; se não, inicializa com 1
-            if (contagemPorPessoa[pessoa]) {
-              contagemPorPessoa[pessoa]++;
+            if (contagemPorPessoaPorTurma[turma][pessoa]) {
+              contagemPorPessoaPorTurma[turma][pessoa]++;
             } else {
-              contagemPorPessoa[pessoa] = 1;
+              contagemPorPessoaPorTurma[turma][pessoa] = 1;
             }
           });
         } else {
@@ -81,24 +58,39 @@ function contarPresencasPorPessoa() {
         }
       });
 
-      // Criar uma mensagem para o alerta com a contagem por pessoa
-      let mensagem = "Contagem de presenças por pessoa:\n";
-      for (const [pessoa, contagem] of Object.entries(contagemPorPessoa)) {
-        mensagem += `${pessoa}: ${contagem}\n`;
+      // Criar uma mensagem para o alerta com a contagem por turma
+      let mensagem = "Contagem de presenças por turma:\n";
+      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+        mensagem += `Turma ${turma}: ${contagem}\n`;
       }
 
-      alert(mensagem); // Exibe o alerta com a contagem por pessoa
+      // Adicionar contagem por pessoa e calcular a porcentagem de presenças por turma
+      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
+      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
+        mensagem += `Turma ${turma}:\n`;
+        const totalPresencasTurma = contagemPorTurma[turma];
+
+        for (const [pessoa, contagem] of Object.entries(pessoas)) {
+          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
+          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
+
+          mensagem += `${pessoa}: ${contagem} (${porcentagem}%) - ${status}\n`;
+        }
+      }
+
+      alert(mensagem); // Exibe o alerta com as contagens e as porcentagens
     })
     .catch((error) => {
       console.error("Erro ao obter a coleção Presenças:", error);
       alert("Erro ao contar presenças. Veja o console para mais detalhes.");
     });
 }
+
         
     </script>
 </head>
 <body>
     <!-- Botão para contar presenças por turma -->
-    <button onclick="contarPresencasPorTurma(),contarPresencasPorPessoa()">Contar Presenças por Turma</button>
+    <button onclick="contarPresencasPorTurmaEPessoa()">Contar Presenças por Turma</button>
 </body>
 </html>
