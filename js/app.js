@@ -53,89 +53,20 @@ const loadTurmas = async () => {
 };
 
 // Função para contar presenças por turma e por pessoa
-// Função para contar presenças por turma e por pessoa
-function contarPresencasPorTurmaEPessoa() {
-  db.collection("Presenças")
-    .get()
-    .then((querySnapshot) => {
-      const contagemPorTurma = {};
-      const contagemPorPessoaPorTurma = {};
-
-      // Iterar sobre todos os documentos para contar por turma e por pessoa em cada turma
-      querySnapshot.forEach((doc) => {
-        const turma = doc.data().turma;
-        const presentes = doc.data().presentes;
-
-        // Contagem por turma
-        if (contagemPorTurma[turma]) {
-          contagemPorTurma[turma]++;
-        } else {
-          contagemPorTurma[turma] = 1;
-          contagemPorPessoaPorTurma[turma] = {}; // Inicializa a contagem por pessoa
-        }
-
-        // Contagem por pessoa dentro de cada turma
-        if (Array.isArray(presentes)) {
-          presentes.forEach((pessoa) => {
-            if (contagemPorPessoaPorTurma[turma][pessoa]) {
-              contagemPorPessoaPorTurma[turma][pessoa]++;
-            } else {
-              contagemPorPessoaPorTurma[turma][pessoa] = 1;
-            }
-          });
-        } else {
-          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
-        }
-      });
-
-      // Criar uma mensagem para o alerta com a contagem por turma
-      let mensagem = "Contagem de presenças por turma:\n";
-      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
-        mensagem += `Turma ${turma}: ${contagem}\n`;
-      }
-
-      // Adicionar contagem por pessoa e calcular a porcentagem de presenças por turma
-      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
-      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
-        mensagem += `Turma ${turma}:\n`;
-        const totalPresencasTurma = contagemPorTurma[turma];
-
-        for (const [pessoa, contagem] of Object.entries(pessoas)) {
-          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
-          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
-
-          mensagem += `${pessoa}: ${contagem} (${porcentagem}%) - ${status}\n`;
-
-          // Se a porcentagem for menor que 80%, enviar um e-mail para o aluno
-          if (porcentagem < 80) {
-            enviarEmailParaAluno(pessoa);
-          }
-        }
-      }
-
-      alert(mensagem); // Exibe o alerta com as contagens e as porcentagens
-    })
-    .catch((error) => {
-      console.error("Erro ao obter a coleção Presenças:", error);
-      alert("Erro ao contar presenças. Veja o console para mais detalhes.");
-    });
-}
-
-// Inicializa o EmailJS com seu User ID
-emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
-
 // Função para enviar e-mail para alunos com baixa presença
-function enviarEmailParaAluno(nomeAluno) {
+function enviarEmailParaAluno(nomeAluno, turma) {
   const serviceID = 'service_djxccyq'; // ID do serviço
   const templateID = 'template_01jpzky'; // ID do template
 
-  // Buscar e-mail do aluno no Firestore
-  db.collection("Alunos")
-    .where("nome", "==", nomeAluno) 
+  // Buscar e-mail do aluno na subcoleção "Alunos" da turma
+  db.collection("Turmas")
+    .doc(turma)
+    .collection("Alunos")
+    .where("nome", "==", nomeAluno)
     .get()
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
-        console.error(`Nenhum aluno encontrado com o nome ${nomeAluno}`);
+        console.error(`Nenhum aluno encontrado com o nome ${nomeAluno} na turma ${turma}`);
         return;
       }
 
@@ -145,7 +76,7 @@ function enviarEmailParaAluno(nomeAluno) {
       const templateParams = {
         to_email: destinatario,
         subject: 'Aviso de Baixa Presença',
-        message: `Olá ${nomeAluno}, notamos que sua presença está abaixo do limite mínimo de 80%. Por favor, esteja ciente que isso pode afetar sua aprovação no curso.`,
+        message: `Olá ${nomeAluno}, notamos que sua presença está abaixo do limite mínimo de 80%. Por favor, esteja ciente de que isso pode afetar sua aprovação no curso.`,
       };
 
       emailjs.send(serviceID, templateID, templateParams)
@@ -161,8 +92,63 @@ function enviarEmailParaAluno(nomeAluno) {
     });
 }
 
-// Chama a função de contagem ao carregar a página
+// Função para contar presenças por turma e por pessoa
+function contarPresencasPorTurmaEPessoa() {
+  db.collection("Presenças")
+    .get()
+    .then((querySnapshot) => {
+      const contagemPorTurma = {};
+      const contagemPorPessoaPorTurma = {};
+
+      querySnapshot.forEach((doc) => {
+        const turma = doc.data().turma;
+        const presentes = doc.data().presentes;
+
+        if (contagemPorTurma[turma]) {
+          contagemPorTurma[turma]++;
+        } else {
+          contagemPorTurma[turma] = 1;
+          contagemPorPessoaPorTurma[turma] = {};
+        }
+
+        if (Array.isArray(presentes)) {
+          presentes.forEach((pessoa) => {
+            if (contagemPorPessoaPorTurma[turma][pessoa]) {
+              contagemPorPessoaPorTurma[turma][pessoa]++;
+            } else {
+              contagemPorPessoaPorTurma[turma][pessoa] = 1;
+            }
+          });
+        }
+
+        let mensagem = `Turma ${turma}:\n`;
+        const totalPresencasTurma = contagemPorTurma[turma];
+
+        for (const [pessoa, contagem] of Object.entries(contagemPorPessoaPorTurma[turma])) {
+          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
+
+          mensagem += `${pessoa}: ${contagem} (${porcentagem}%) - ${
+            porcentagem >= 80 ? "Aprovado" : "Reprovado"
+          }\n`;
+
+          // Se a porcentagem for menor que 80%, enviar um e-mail para o aluno
+          if (porcentagem < 80) {
+            enviarEmailParaAluno(pessoa, turma); // Chama a função para enviar o e-mail
+          }
+        }
+      });
+
+      alert(mensagem);
+    })
+    .catch((error) => {
+      console.error("Erro ao contar presenças:", error);
+    });
+}
+
+// Inicia a contagem quando a página é carregada
 window.onload = contarPresencasPorTurmaEPessoa;
+
+
 
 
 // Carregar turmas ao iniciar a página
