@@ -126,7 +126,7 @@ function enviarEmailParaAlunosComBaixaPresenca() {
           const templateParams = {
             to_email: destinatario,
             subject: 'Aviso de Presença', // Assunto do email
-            message: `Olá ${resultado.nome}, você está com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique sua frequência para evitar problemas.`, // Mensagem do email
+            message: `Caros pais, gostariamos de informar que ${resultado.nome} encontra-se com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique a frequência para evitar problemas. Qualquer dúvida estamos a disposição.`, // Mensagem do email
           };
 
           emailjs.send(serviceID, templateID, templateParams)
