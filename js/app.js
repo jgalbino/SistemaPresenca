@@ -53,8 +53,8 @@ const loadTurmas = async () => {
 };
 
 // Função para contar presenças por turma e por pessoa
-// Inicializa o EmailJS com seu User ID
-emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
+
+emailjs.init('jTqaJyiSymGuaW1jj'); // ID Publico do EmailJS
 
 // Função para enviar e-mail para alunos com baixa presença
 function enviarEmailParaAluno(nomeAluno) {
