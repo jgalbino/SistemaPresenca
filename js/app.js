@@ -46,264 +46,226 @@ const loadTurmas = async () => {
             return { id: doc.id, nome: doc.data().nome };
         });
 
-        preencherDropdown("select-class-turma", turmas);
-        preencherDropdown("select-presence-turma", turmas);
-        preencherDropdown("select-view-turma", turmas);
+        preencherDropdown("select-turma", turmas);
     } catch (error) {
         console.error("Erro ao carregar turmas:", error);
     }
 };
 
-// Carregar turmas ao iniciar a página
-document.addEventListener("DOMContentLoaded", loadTurmas);
-
-// Função para criar aula
-const createClass = (event) => {
-    event.preventDefault();
-
-    const turmaId = document.getElementById("select-class-turma").value;
-    const date = document.getElementById("class-date").value;
-
-    if (!turmaId) {
-        console.error("Nenhuma turma selecionada para criar aula.");
-        return;
-    }
-
-    db.collection("Aulas").add({
-        turma: turmaId,
-        date
-    }).then(() => {
-        alert("Aula criada com sucesso!");
-    }).catch((error) => {
-        console.error("Erro ao criar aula:", error);
-    });
-};
-
-// Vincular evento para criar aula
-document.getElementById("create-class-form").addEventListener("submit", createClass);
-
-// Função para carregar alunos
-const loadStudents = () => {
-    const turmaId = document.getElementById("select-presence-turma").value;
-    const studentList = document.getElementById("student-list");
-
-    if (!turmaId || !studentList) {
-        console.error("Erro ao carregar alunos: Turma não selecionada ou lista de alunos não encontrada.");
-        return;
-    }
-
-    studentList.innerHTML = "";
-
-    db.collection("Alunos").where("turma", "==", turmaId).get().then((querySnapshot) => {
-        querySnapshot.forEach((doc) => {
-            const student = doc.data();
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.id = `student-${doc.id}`;
-            checkbox.value = doc.id;
-
-            const label = document.createElement("label");
-            label.htmlFor = `student-${doc.id}`;
-            label.innerText = student.nome;
-
-            const div = document.createElement("div");
-            div.appendChild(checkbox);
-            div.appendChild(label);
-
-            studentList.appendChild(div);
-        });
-    }).catch((error) => {
-        console.error("Erro ao carregar alunos:", error);
-    });
-};
-
-// Vincular evento para carregar alunos
-document.getElementById("load-students").addEventListener("click", loadStudents);
-
-// Função para registrar presença
-const registerPresence = (event) => {
-    event.preventDefault();
-
-    const turmaId = document.getElementById("select-presence-turma").value;
-    const date = document.getElementById("select-date").value;
-
-    if (!turmaId) {
-        console.error("Erro ao registrar presença: Turma não selecionada.");
-        return;
-    }
-
-    const studentCheckboxes = document.querySelectorAll("#student-list input[type='checkbox']");
-    const presentStudentIds = [];
-
-    studentCheckboxes.forEach((checkbox) => {
-        if (checkbox.checked) {
-            presentStudentIds.push(checkbox.value);
-        }
-    });
-
-    db.collection("Presenças").add({
-        turma: turmaId,
-        date,
-        presentes: presentStudentIds
-    }).then(() => {
-        alert("Presença registrada com sucesso!");
-    }).catch((error) => {
-        console.error("Erro ao registrar presença:", error);
-    });
-};
-
-// Vincular evento para registrar presença
-document.getElementById("register-presence-form").addEventListener("submit", registerPresence);
-
-// Função para visualizar presença
-const viewPresence = (event) => {
-    event.preventDefault();
-
-    const turmaId = document.getElementById("select-view-turma").value;
-    const date = document.getElementById("view-date").value;
-
-    const presenceList = document.getElementById("presence-list");
-
-    if (!turmaId || !presenceList) {
-        console.error("Erro ao visualizar presença: Turma ou lista de presença não encontrada.");
-        return;
-    }
-
-    presenceList.innerHTML = ""; // Limpar lista antes de carregar
-
-    db.collection("Presenças").where("turma", "==", turmaId).where("date", "==", date).get().then((querySnapshot) => {
-        if (querySnapshot.empty) {
-            presenceList.innerText = "Nenhuma presença encontrada para essa aula.";
-            return;
-        }
-
-        const presentes = querySnapshot.docs[0].data().presentes;
-
-        const promises = presentes.map((studentId) => {
-            return db.collection("Alunos").doc(studentId).get();
-        });
-
-        Promise.all(promises).then((results) => {
-            results.forEach((studentDoc) => {
-                const student = studentDoc.data();
-                const p = document.createElement("p");
-                p.innerText = student.nome;
-                presenceList.appendChild(p);
-            });
-        });
-    }).catch((error) => {
-        console.error("Erro ao visualizar presença:", error);
-    });
-};
-
-// Vincular evento para visualizar presença
-document.getElementById("view-presence-form").addEventListener("submit", viewPresence);
-
 // Função para contar presenças por turma e por pessoa
-// Inicializa o EmailJS com seu User ID
-emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
 
-function enviarEmailParaAlunosComBaixaPresenca() {
+function contarPresencasPorTurmaEPessoa() {
   const db = firebase.firestore();
 
-  // Identificar alunos com menos de 80% de presença
   db.collection("Presenças")
     .get()
     .then((querySnapshot) => {
       const contagemPorTurma = {};
       const contagemPorPessoaPorTurma = {};
 
+      // Primeiro, contar as presenças por turma e por ID do aluno
       querySnapshot.forEach((doc) => {
         const turma = doc.data().turma;
         const presentes = doc.data().presentes;
 
         if (!contagemPorTurma[turma]) {
-          contagemPorTurma[turma] = 0;
+          contagemPorTurma[turma] = 1;
           contagemPorPessoaPorTurma[turma] = {};
+        } else {
+          contagemPorTurma[turma]++;
         }
 
-        contagemPorTurma[turma]++;
-
+        // Contagem por pessoa dentro de cada turma usando IDs de alunos
         if (Array.isArray(presentes)) {
-          presentes.forEach((pessoa) => {
-            if (!contagemPorPessoaPorTurma[turma][pessoa]) {
-              contagemPorPessoaPorTurma[turma][pessoa] = 0;
+          presentes.forEach((alunoID) => {
+            if (!contagemPorPessoaPorTurma[turma][alunoID]) {
+              contagemPorPessoaPorTurma[turma][alunoID] = 1;
+            } else {
+              contagemPorPessoaPorTurma[turma][alunoID]++;
             }
-            contagemPorPessoaPorTurma[turma][pessoa]++;
           });
+        } else {
+          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
       });
 
-      const promessasAlunos = [];
+      // Agora, precisamos buscar os nomes dos alunos da coleção "Alunos"
+      const promessasNomes = [];
 
       for (const turma in contagemPorPessoaPorTurma) {
-        const totalPresencasTurma = contagemPorTurma[turma];
-
-        for (const pessoa in contagemPorPessoaPorTurma[turma]) {
-          const contagemPresencas = contagemPorPessoaPorTurma[turma][pessoa];
-          const porcentagem = (contagemPresencas / totalPresencasTurma) * 100;
-
-          if (porcentagem < 80) {
-            const alunoRef = db.collection("Alunos").doc(pessoa);
-            promessasAlunos.push(
-              alunoRef.get().then((doc) => {
-                if (doc.exists) {
-                  const nome = doc.data().nome;
-                  const email = doc.data().email;
-                  return { nome, email, turma, porcentagem: porcentagem.toFixed(2) };
-                } else {
-                  console.warn(`Aluno com ID ${pessoa} não encontrado.`);
-                  return null;
-                }
-              })
-            );
-          }
+        for (const alunoID in contagemPorPessoaPorTurma[turma]) {
+          promessasNomes.push(
+            db.collection("Alunos").doc(alunoID).get().then((doc) => {
+              if (doc.exists) {
+                const nomeAluno = doc.data().nome;
+                contagemPorPessoaPorTurma[turma][alunoID] = {
+                  contagem: contagemPorPessoaPorTurma[turma][alunoID],
+                  nome: nomeAluno,
+                };
+              } else {
+                console.warn(`Aluno com ID ${alunoID} não encontrado na coleção Alunos.`);
+              }
+            })
+          );
         }
       }
 
-      return Promise.all(promessasAlunos);
+      return Promise.all(promessasNomes);
     })
-    .then((resultados) => {
-      const serviceID = 'service_djxccyq'; // ID do serviço
-      const templateID = 'template_01jpzky'; // ID do template
+    .then(() => {
+      let mensagem = "Contagem de presenças por turma:\n";
+      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+        mensagem += `Turma ${turma}: ${contagem}\n`;
+      }
 
-      resultados.forEach((resultado) => {
-        if (resultado) {
-          const destinatario = resultado.email;
-          const templateParams = {
-            to_email: destinatario,
-            subject: 'Aviso de Presença', // Assunto do email
-            message: `Caros pais, gostariamos de informar que ${resultado.nome} encontra-se com ${resultado.porcentagem}% de presença na turma ${resultado.turma}. Por favor, verifique a frequência para evitar problemas. Qualquer dúvida estamos a disposição.`, // Mensagem do email
-          };
+      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
+      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
+        mensagem += `Turma ${turma}:\n`;
+        const totalPresencasTurma = contagemPorTurma[turma];
 
-          emailjs.send(serviceID, templateID, templateParams)
-            .then(function (response) {
-              console.log(`E-mail enviado com sucesso para ${destinatario}!`, response.status, response.text);
-              alert(`E-mail enviado para:\nNome: ${resultado.nome}\nEmail: ${destinatario}\nPresença: ${resultado.porcentagem}%`);
-            }, function (error) {
-              console.error(`Falha ao enviar e-mail para ${destinatario}:`, error);
-              alert(`Erro ao enviar e-mail para ${destinatario}.`);
-            });
+        for (const [alunoID, dados] of Object.entries(pessoas)) {
+          const contagem = dados.contagem;
+          const nome = dados.nome || "Desconhecido"; // Se não conseguir obter o nome
+          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
+          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
+
+          mensagem += `${nome}: ${contagem} (${porcentagem}%) - ${status}\n`;
         }
-      });
+      }
+
+      alert(mensagem); // Exibe a mensagem final com nomes e porcentagens
     })
     .catch((error) => {
-      console.error("Erro ao verificar presenças:", error);
-      alert("Erro ao verificar presenças. Veja o console para mais detalhes.");
+      console.error("Erro ao contar presenças:", error);
+      alert("Erro ao contar presenças. Veja o console para mais detalhes.");
     });
 }
 
-window.onload = function() {
-  const confirmacao = confirm("Você deseja enviar email para os pais dos alunos com menos de 80% de presença?");
-  
-  if (confirmacao) {
-    enviarEmailParaAlunosComBaixaPresenca();
-  } else {
-    alert("Ação cancelada. Nenhum email será enviado.");
-  }
+window.onload = contarPresencasPorTurmaEPessoa;
+
+
+// Carregar turmas ao iniciar a página
+document.addEventListener("DOMContentLoaded", loadTurmas);
+
+// Função para carregar presenças para uma turma e data
+const loadPresences = async () => {
+    const turmaId = document.getElementById("select-turma").value;
+    const date = document.getElementById("select-date").value;
+
+    const presenceTable = document.getElementById("presence-table");
+
+    if (!turmaId || !date) {
+        console.error("Erro ao carregar presença: Turma ou data não especificada.");
+        return;
+    }
+
+    presenceTable.innerHTML = ''; // Limpar tabela antes de carregar
+
+    try {
+        const alunosSnapshot = await db.collection("Alunos").where("turma", "==", turmaId).get();
+        const presencasSnapshot = await db.collection("Presenças")
+            .where("turma", "==", turmaId)
+            .where("date", "==", date)
+            .get();
+
+        // Obter IDs dos alunos presentes se a presença já existe
+        let presentes = [];
+        if (!presencasSnapshot.empty) {
+            const presencaDoc = presencasSnapshot.docs[0];
+            presentes = presencaDoc.data().presentes;
+        }
+
+        // Criar a tabela de presença
+        const table = document.createElement("table");
+        table.className = "table table-striped";
+
+        // Criar cabeçalho da tabela
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+        trHead.appendChild(document.createElement("th")).textContent = "Aluno";
+        trHead.appendChild(document.createElement("th")).textContent = "Presente";
+
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        // Criar corpo da tabela
+        const tbody = document.createElement("tbody");
+
+        alunosSnapshot.docs.forEach((doc) => {
+            const student = doc.data();
+            const tr = document.createElement("tr");
+
+            const nameCell = document.createElement("td");
+            nameCell.textContent = student.nome;
+            tr.appendChild(nameCell);
+
+            const checkCell = document.createElement("td");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.id = `student-${doc.id}`;
+            checkbox.value = doc.id;
+            checkbox.checked = presentes.includes(doc.id); // Marcar se o aluno estava presente
+            checkCell.appendChild(checkbox);
+
+            tr.appendChild(checkCell);
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        presenceTable.appendChild(table);
+    } catch (error) {
+        console.error("Erro ao carregar alunos ou presença:", error);
+    }
 };
 
+// Vincular evento para carregar presenças
+document.getElementById("load-presences").addEventListener("click", loadPresences);
 
+// Função para registrar ou salvar presença
+const registerPresence = (event) => {
+    event.preventDefault();
+
+    const turmaId = document.getElementById("select-turma").value;
+    const date = document.getElementById("select-date").value;
+
+    if (!turmaId || !date) {
+        console.error("Erro ao registrar presença: Turma ou data não especificada.");
+        return;
+    }
+
+    const presentStudentIds = [];
+
+    const studentCheckboxes = document.querySelectorAll("#presence-table input[type='checkbox']");
+    studentCheckboxes.forEach((checkbox) => {
+        if (checkbox.checked) {
+            presentStudentIds.push(checkbox.value);
+        }
+    });
+
+    db.collection("Presenças").where("turma", "==", turmaId).where("date", "==", date).get().then((querySnapshot) => {
+        if (querySnapshot.empty) {
+            // Se a presença ainda não existir, adicione um novo documento
+            return db.collection("Presenças").add({
+                turma: turmaId,
+                date,
+                presentes: presentStudentIds
+            });
+        } else {
+            // Se a presença já existir, atualize o documento existente
+            const presencaDocId = querySnapshot.docs[0].id;
+            return db.collection("Presenças").doc(presencaDocId).update({
+                presentes: presentStudentIds
+            });
+        }
+    }).then(() => {
+        alert("Presença registrada/salva com sucesso!");
+    }).catch((error) => {
+        console.error("Erro ao registrar/salvar presença:", error);
+    });
+};
+
+// Vincular evento para registrar ou salvar presença
+document.getElementById("register-view-presence-form").addEventListener("submit", registerPresence);
 
         function logout() {
             firebase.auth().signOut().then(function() {
@@ -316,3 +278,4 @@ window.onload = function() {
                 console.log("Erro ao fazer logout:", error);
             });
         }
+
