@@ -12,7 +12,7 @@ const config = {
 const app = firebase.initializeApp(config);
 const db = firebase.firestore();
 
-// Função para obter informações de presença por aluno, incluindo ano e data
+// Função para obter presenças por aluno
 const obterPresencaPorAluno = async () => {
   const contagemPorTurma = {};
   const contagemPorPessoaPorTurma = {};
@@ -51,18 +51,16 @@ const obterPresencaPorAluno = async () => {
     const alunoId = doc.id;
     const alunoData = doc.data();
 
-    if (contagemPorPessoaPorTurma) {
-      for (const turma in contagemPorPessoaPorTurma) {
-        if (contagemPorPessoaPorTurma[turma][alunoId]) {
-          const aluno = contagemPorPessoaPorTurma[turma][alunoId];
-          const totalTurma = contagemPorTurma[turma];
-          const porcentagem = ((aluno.presencas / totalTurma) * 100).toFixed(2);
+    for (const turma in contagemPorPessoaPorTurma) {
+      if (contagemPorPessoaPorTurma[turma][alunoId]) {
+        const aluno = contagemPorPessoaPorTurma[turma][alunoId];
+        const totalTurma = contagemPorTurma[turma];
+        const porcentagem = ((aluno.presencas / totalTurma) * 100).toFixed(2);
 
-          aluno.nome = alunoData.nome;
-          aluno.turma = turma;
-          aluno.ano = alunoData.ano;
-          aluno.presenca = porcentagem;
-        }
+        aluno.nome = alunoData.nome;
+        aluno.turma = turma;
+        aluno.ano = alunoData.ano;
+        aluno.presenca = porcentagem;
       }
     }
   });
@@ -70,7 +68,7 @@ const obterPresencaPorAluno = async () => {
   return contagemPorPessoaPorTurma;
 };
 
-// Função para gerar relatório com agrupamento dinâmico (por aluno, turma, data ou ano)
+// Função para gerar o relatório, com agrupamento dinâmico (aluno, turma, data ou ano de ensino)
 const gerarRelatorio = async () => {
   const agrupamento = document.getElementById("select-agrupamento").value;
   const relatorioTabela = document.getElementById("relatorio-tabela");
@@ -83,9 +81,10 @@ const gerarRelatorio = async () => {
   relatorioTabela.innerHTML = ''; // Limpar a tabela antes de carregar
 
   try {
-    const totalPorAluno = await obterPresencaPorAluno();
+    const totalPorAluno = await obterPresencaPorAluno(); // Obter presenças por aluno
     const agrupado = {};
 
+    // Agrupar conforme o critério selecionado
     for (const turma in totalPorAluno) {
       for (const alunoId in totalPorAluno[turma]) {
         const alunoData = totalPorAluno[turma][alunoId];
@@ -99,7 +98,7 @@ const gerarRelatorio = async () => {
             chave = alunoData.turma; // Agrupar por turma
             break;
           case "data":
-            chave = alunoData.datas.join(", "); // Agrupar por data (unir datas)
+            chave = alunoData.datas.join(", "); // Agrupar por data (concatenar datas)
             break;
           case "ano":
             chave = alunoData.ano; // Agrupar por ano de ensino
@@ -129,7 +128,7 @@ const gerarRelatorio = async () => {
     const thead = document.createElement("thead");
     const trHead = document.createElement("tr");
 
-    trHead.appendChild(document.createElement("th")).textContent = agrupamento;
+    trHead.appendChild(document.createElement("th")).textContent = agrupamento === "aluno" ? "Aluno" : agrupamento === "turma" ? "Turma" : agrupamento === "data" ? "Data" : "Ano de Ensino";
     trHead.appendChild(document.createElement("th")).textContent = "Detalhes";
 
     thead.appendChild(trHead);
@@ -146,9 +145,9 @@ const gerarRelatorio = async () => {
 
         const detalhesCell = document.createElement("td");
 
-        const detalhes = agrupamento === "aluno" || agrupamento === "ano"
-          ? `Turma: ${aluno.turma}, Presença: ${aluno.presenca}%` 
-          : `${aluno.nome}: ${aluno.presenca}%`;
+        const detalhes = agrupamento === "turma"
+          ? agrupado[chave].map(aluno => `${aluno.nome}: ${aluno.presenca}%`).join("; ") 
+          : `Turma: ${aluno.turma}, Presença: ${aluno.presenca}%`;
 
         detalhesCell.textContent = detalhes;
 
@@ -156,7 +155,6 @@ const gerarRelatorio = async () => {
         tr.appendChild(detalhesCell);
 
         tbody.appendChild(tr);
-      });
     }
 
     table.appendChild(tbody);
@@ -181,18 +179,12 @@ const baixarRelatorioTXT = async () => {
 
   let txtContent = `Relatório por ${agrupamento}:\n\n`;
 
-  for (const chave in agrupado) {
+  for (const chave em agrupado) {
     txtContent += `- ${chave}\n`;
 
-    if (agrupamento === "data") {
-      txtContent += agrupado[chave]
-        .map(aluno => `  - ${aluno.nome}: ${aluno.presenca}%`)
-        .join("\n");
-    } else {
-      txtContent += agrupado[chave]
-        .map(aluno => `  - ${aluno.nome}: ${aluno.presenca}%`)
-        .join("\n");
-    }
+    txtContent += agrupado[chave]
+      .map(aluno => `  - ${aluno.nome}: ${aluno.presenca}%`)
+      .join("\n");
 
     txtContent += "\n";
   }
@@ -213,5 +205,4 @@ document.getElementById("gerar-relatorio").addEventListener("click", gerarRelato
 
 // Vincular evento para baixar o relatório como TXT
 document.getElementById("baixar-txt").addEventListener("click", baixarRelatorioTXT);
-
 
