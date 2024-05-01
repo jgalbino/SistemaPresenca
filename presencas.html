@@ -69,10 +69,10 @@
                       if (presentes) {
                           presentes.forEach((alunoID) => {
                               // Incrementar contagem para cada ID de aluno
-                              if (contagemPorAluno[alunoID]) {
-                                  contagemPorAluno[alunoID]++;
+                              if (contagemPorAluno[presentes]) {
+                                  contagemPorAluno[presentes]++;
                               } else {
-                                  contagemPorAluno[alunoID] = 1;
+                                  contagemPorAluno[presentes] = 1;
                               }
                           });
                       }
@@ -84,11 +84,11 @@
 
                   // Buscar nomes dos alunos na coleção "Alunos"
                   for (const alunoID in contagemPorAluno) {
-                      const prom = db.collection("Alunos").doc(alunoID).get()
+                      const prom = db.collection("Alunos").doc(presentes).get()
                           .then((doc) => {
                               if (doc.exists) {
                                   const nome = doc.data().nome; // Obter o nome do aluno
-                                  const quantidade = contagemPorAluno[alunoID]; // Quantidade de presenças por ID
+                                  const quantidade = contagemPorAluno[presentes]; // Quantidade de presenças por ID
 
                                   // Se o nome já existe, incrementa; se não, inicializa com a quantidade
                                   if (contagemPorNome[nome]) {
