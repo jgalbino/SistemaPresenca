@@ -13,6 +13,21 @@ Para configurar e executar o sistema, você precisará do seguinte:
 - Conta no Firebase para integração do banco de dados.
 - Conta no EmailJS para enviar e-mails automáticos.
 
+
+## Instalação e Execução do Sistema
+
+Para instalar e executar o sistema, siga estas etapas:
+
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/seu-usuario/SistemaPresenca.git
+
+2. **Acesse a pasta do projeto:**
+   ```bash
+   cd SistemaPresenca
+3. **Abra o arquivo 'index.html no navegador**
+   Certifique-se de estar conectado à internet para conectar-se ao Firebase e ao EmailJS.
+   
 ## Configuração do Firebase
 Para conectar a aplicação ao Firebase, siga estas etapas:
 
@@ -58,17 +73,4 @@ Para configurar a funcionalidade de envio de e-mails automáticos, siga estas et
    }, "SEU_PUBLIC_KEY")
 
 
-## Instalação e Execução do Sistema
-
-Para instalar e executar o sistema, siga estas etapas:
-
-1. **Clone o repositório:**
-   ```bash
-   git clone https://github.com/seu-usuario/SistemaPresenca.git
-
-2. **Acesse a pasta do projeto:**
-   ```bash
-   cd SistemaPresenca
-3. **Abra o arquivo 'index.html no navegador**
-   Certifique-se de estar conectado à internet para conectar-se ao Firebase e ao EmailJS.
 
