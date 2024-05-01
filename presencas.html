@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Contagem de Presenças por Turma</title>
+    <!-- Importa o script do Firebase -->
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/9.18.0/firebase-app.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/9.18.0/firebase-firestore.js"></script>
+    
+    <script type="text/javascript">
+        // Configuração do Firebase
+        var config = {
+        	apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
+        	authDomain: "sistemaoctogono.firebaseapp.com",
+        	projectId: "sistemaoctogono",
+        	storageBucket: "sistemaoctogono.appspot.com",
+        	messagingSenderId: "415747300285",
+        	appId: "1:415747300285:web:2ae6ae2d51eefc7e1950d4"
+        };
+
+        // Inicializa o Firebase
+        const app = firebase.initializeApp(config);
+        const db = firebase.firestore();
+
+        // Função para contar presenças por turma
+        function contarPresencasPorTurma() {
+            db.collection("Presenças")
+              .get()
+              .then((querySnapshot) => {
+                  const contagemPorTurma = {};
+
+                  // Iterar sobre todos os documentos e contar por turma
+                  querySnapshot.forEach((doc) => {
+                      const turma = doc.data().turma; // Assumindo que o campo é chamado "turma"
+                      
+                      // Se a turma já estiver no objeto, incrementa; se não, inicializa com 1
+                      if (contagemPorTurma[turma]) {
+                          contagemPorTurma[turma]++;
+                      } else {
+                          contagemPorTurma[turma] = 1;
+                      }
+                  });
+
+                  // Criar uma mensagem para o alerta com a contagem por turma
+                  let mensagem = "Contagem de presenças por turma:\n";
+                  for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+                      mensagem += `Turma ${turma}: ${contagem}\n`;
+                  }
+
+                  alert(mensagem); // Exibe o alerta com a contagem por turma
+              })
+              .catch((error) => {
+                  console.error("Erro ao obter a coleção Presenças:", error);
+                  alert("Erro ao contar presenças. Veja o console para mais detalhes.");
+              });
+        }
+    </script>
+</head>
+<body>
+    <!-- Botão para contar presenças por turma -->
+    <button onclick="contarPresencasPorTurma()">Contar Presenças por Turma</button>
+</body>
+</html>
