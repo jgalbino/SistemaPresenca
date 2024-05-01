@@ -232,7 +232,7 @@ const gerarTabela = (relatorio, tipo) => {
 };
 
 const gerarRelatorio = async () => {
-  const opcao = document.getElementById("dropdown-filtro").value; // Assumindo que você tem um dropdown com ID "dropdown-filtro"
+  const opcao = document.getElementById("select-agrupamento").value; // Assumindo que você tem um dropdown com ID "dropdown-filtro"
   const presencas = await obterPresencas();
   const alunos = await obterAlunos();
 
