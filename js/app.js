@@ -53,26 +53,29 @@ const loadTurmas = async () => {
 };
 
 // Função para contar presenças por turma e por pessoa
+// Inicializa o EmailJS com seu User ID
+emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
+
 // Função para enviar e-mail para alunos com baixa presença
-function enviarEmailParaAluno(nomeAluno, turma) {
+function enviarEmailParaAluno(nomeAluno) {
   const serviceID = 'service_djxccyq'; // ID do serviço
   const templateID = 'template_01jpzky'; // ID do template
 
-  // Buscar e-mail do aluno na subcoleção "Alunos" 
+  // Buscar e-mail do aluno no Firestore
   db.collection("Alunos")
-    .where("nome", "==", nomeAluno)
+    .where("nome", "==", nomeAluno) // Procurar pelo nome do aluno
     .get()
     .then((querySnapshot) => {
       if (querySnapshot.empty) {
-        console.error(`Nenhum aluno encontrado com o nome ${nomeAluno} na turma ${turma}`);
+        console.error(`Nenhum aluno encontrado com o nome ${nomeAluno}`);
         return;
       }
 
       const doc = querySnapshot.docs[0];
-      const destinatario = doc.data().email;
+      const destinatário = doc.data().email; // Obter o e-mail do aluno
 
       const templateParams = {
-        to_email: destinatario,
+        to_email: destinatário,
         subject: 'Aviso de Baixa Presença',
         message: `Olá ${nomeAluno}, notamos que sua presença está abaixo do limite mínimo de 80%. Por favor, esteja ciente de que isso pode afetar sua aprovação no curso.`,
       };
@@ -86,7 +89,7 @@ function enviarEmailParaAluno(nomeAluno, turma) {
         });
     })
     .catch((error) => {
-      console.error("Erro ao buscar o aluno:", error);
+      console.error("Erro ao buscar aluno:", error);
     });
 }
 
@@ -106,46 +109,55 @@ function contarPresencasPorTurmaEPessoa() {
           contagemPorTurma[turma]++;
         } else {
           contagemPorTurma[turma] = 1;
-          contagemPorPessoaPorTurma[turma] = {};
+          contagemPorPessoaPorTurma[turma] = {}; // Inicializa a contagem por pessoa
         }
 
+        // Contagem por pessoa dentro de cada turma
         if (Array.isArray(presentes)) {
-          presentes.forEach((pessoa) => {
-            if (contagemPorPessoaPorTurma[turma][pessoa]) {
-              contagemPorPessoaPorTurma[turma][pessoa]++;
+          presentes.forEach((nomeAluno) => {
+            if (contagemPorPessoaPorTurma[turma][nomeAluno]) {
+              contagemPorPessoaPorTurma[turma][nomeAluno]++;
             } else {
-              contagemPorPessoaPorTurma[turma][pessoa] = 1;
+              contagemPorPessoaPorTurma[turma][nomeAluno] = 1;
             }
           });
-        }
-
-        let mensagem = `Turma ${turma}:\n`;
-        const totalPresencasTurma = contagemPorTurma[turma];
-
-        for (const [pessoa, contagem] of Object.entries(contagemPorPessoaPorTurma[turma])) {
-          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
-
-          mensagem += `${pessoa}: ${contagem} (${porcentagem}%) - ${
-            porcentagem >= 80 ? "Aprovado" : "Reprovado"
-          }\n`;
-
-          // Se a porcentagem for menor que 80%, enviar um e-mail para o aluno
-          if (porcentagem < 80) {
-            enviarEmailParaAluno(pessoa, turma); // Chama a função para enviar o e-mail
-          }
+        } else {
+          console.warn(`Campo "presentes" no documento ${doc.id} não é um array`);
         }
       });
 
-      alert(mensagem);
+      let mensagem = "Contagem de presenças por turma:\n";
+      for (const [turma, contagem] of Object.entries(contagemPorTurma)) {
+        mensagem += `Turma ${turma}: ${contagem}\n`;
+      }
+
+      // Calcular a porcentagem de presenças por pessoa por turma
+      mensagem += "\nContagem de presenças por pessoa (com porcentagem):\n";
+      for (const [turma, pessoas] of Object.entries(contagemPorPessoaPorTurma)) {
+        const totalPresencasTurma = contagemPorTurma[turma];
+
+        for (const [nomeAluno, contagem] of Object.entries(pessoas)) {
+          const porcentagem = ((contagem / totalPresencasTurma) * 100).toFixed(2);
+          const status = porcentagem >= 80 ? "Aprovado" : "Reprovado";
+
+          mensagem += `${nomeAluno}: ${contagem} (${porcentagem}%) - ${status}\n`;
+
+          // Se a porcentagem for menor que 80%, enviar e-mail para o aluno
+          if (porcentagem < 80) {
+            enviarEmailParaAluno(nomeAluno); // Usa a variável nomeAluno para enviar o e-mail
+          }
+        }
+      }
+
+      alert(mensagem); // Exibe o alerta com as contagens e as porcentagens
     })
     .catch((error) => {
-      console.error("Erro ao contar presenças:", error);
+      console.error("Erro ao obter a coleção Presenças:", error);
     });
 }
 
-// Inicia a contagem quando a página é carregada
+// Inicia a contagem ao carregar a página
 window.onload = contarPresencasPorTurmaEPessoa;
-
 
 
 
