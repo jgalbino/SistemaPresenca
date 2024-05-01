@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Teste de Envio de E-mail</title>
+    <title>Teste de Envio de E-mail com EmailJS</title>
     <!-- Importa o script do EmailJS -->
     <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <script type="text/javascript">
@@ -10,15 +10,17 @@
         emailjs.init('jTqaJyiSymGuaW1jj'); // Substitua pelo seu User ID do EmailJS
 
         // Função para enviar e-mail de notificação
-        function enviarEmail() {
-            // Substitua 'SEU_SERVICE_ID' e 'SEU_TEMPLATE_ID' pelos seus valores do EmailJS
+        function enviarEmail(destinatario, assunto, mensagem) {
+            const serviceID = 'service_djxccyq'; // ID do serviço
+            const templateID = 'template_ti0v2rh'; // ID do template
+
             const templateParams = {
-                to_email: 'joao_gabrielfk@hotmail.com', // E-mail destinatário
-                subject: 'Teste de Envio de E-mail', // Assunto do e-mail
-                message: 'Este é um teste para verificar se o envio de e-mails está funcionando.' // Mensagem do e-mail
+                to_email: destinatario, // E-mail destinatário
+                subject: assunto, // Assunto do e-mail
+                message: mensagem, // Corpo do e-mail
             };
 
-            emailjs.send('service_djxccyq', 'template_ti0v2rh', templateParams)
+            emailjs.send(serviceID, templateID, templateParams)
                 .then(function (response) {
                     console.log('E-mail enviado com sucesso!', response.status, response.text);
                     alert('E-mail enviado com sucesso!');
@@ -31,6 +33,6 @@
 </head>
 <body>
     <!-- Botão para testar o envio de e-mail -->
-    <button onclick="enviarEmail()">Enviar E-mail</button>
+    <button onclick="enviarEmail('joao_gabrielfk@hotmail.com', 'Teste de E-mail', 'Mensagem de teste')">Enviar E-mail</button>
 </body>
 </html>
