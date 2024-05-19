@@ -1,11 +1,12 @@
 // Configuração do Firebase
 var config = {
-	apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
-	authDomain: "sistemaoctogono.firebaseapp.com",
-	projectId: "sistemaoctogono",
-	storageBucket: "sistemaoctogono.appspot.com",
-	messagingSenderId: "415747300285",
-	appId: "1:415747300285:web:2ae6ae2d51eefc7e1950d4"
+  apiKey: "AIzaSyDTVuDV0-cK9Nk6OvRV3IO8f563nPXTjuY",
+  authDomain: "sistemaoctogono.firebaseapp.com",
+  databaseURL: "https://sistemaoctogono-default-rtdb.firebaseio.com",
+  projectId: "sistemaoctogono",
+  storageBucket: "sistemaoctogono.appspot.com",
+  messagingSenderId: "415747300285",
+  appId: "1:415747300285:web:ef0cc13b8f6708651950d4"
 };
 
 // Inicializar Firebase
